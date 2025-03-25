@@ -2,17 +2,21 @@ FROM node:18
 
 WORKDIR /app
 
-# Copy only files needed for install
-COPY package.json ./
+# Copy package files
+COPY package*.json ./
 
-# Install with minimal output and no lockfile verification
-RUN npm install --quiet --no-progress
+# Install all dependencies (including dev for TypeScript)
+RUN npm install --include=dev
 
-# Copy rest of the files
-COPY . .
+# Copy source code
+COPY tsconfig.json ./
+COPY src ./src
 
 # Build TypeScript
 RUN npm run build
+
+# Remove dev dependencies
+RUN npm prune --production
 
 EXPOSE 2567
 
