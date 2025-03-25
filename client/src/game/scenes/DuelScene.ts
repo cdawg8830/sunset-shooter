@@ -165,7 +165,13 @@ export class DuelScene extends Phaser.Scene {
     private async connectToServer(retryCount = 0) {
         try {
             console.log('Attempting to connect to server...');
-            const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:2567';
+            let wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:2567';
+            
+            // Ensure we're using wss:// for production
+            if (wsUrl.startsWith('https://')) {
+                wsUrl = wsUrl.replace('https://', 'wss://');
+            }
+            
             console.log('Connecting to WebSocket server at:', wsUrl);
             this.client = new Client(wsUrl);
             
