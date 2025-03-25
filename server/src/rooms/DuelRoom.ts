@@ -1,13 +1,24 @@
 import { Room, Client } from "@colyseus/core";
-import { DuelState, Player } from "./schema/DuelState";
+import { Schema, MapSchema, type } from '@colyseus/schema';
 
-export class DuelRoom extends Room<DuelState> {
+class Player extends Schema {
+    @type("string") id: string = "";
+    @type("boolean") ready: boolean = false;
+    @type("boolean") hasShot: boolean = false;
+    @type("number") reactionTime: number = 0;
+}
+
+class DuelState extends Schema {
+    @type("string") gamePhase: string = "waiting"; // waiting, ready, countdown, draw, result
+    @type("number") drawSignalTime: number = 0;
+    @type({ map: Player }) players = new MapSchema<Player>();
+}
+
+export class DuelRoom extends Room {
     maxClients = 2;
-    state!: DuelState;
     
-    async onCreate() {
-        this.state = new DuelState();
-        this.setState(this.state);
+    onCreate() {
+        this.setState(new DuelState());
 
         // Handle player shooting
         this.onMessage("shoot", (client: Client, message: any) => {
