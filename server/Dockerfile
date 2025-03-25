@@ -1,38 +1,22 @@
-# Build stage
-FROM node:18-alpine AS builder
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Add npm configuration
-RUN npm config set progress=false \
-    && npm config set fund=false \
-    && npm config set audit=false \
-    && npm config set update-notifier=false
+# Install build essentials
+RUN apk add --no-cache python3 make g++
 
 # Copy package files
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install ALL dependencies for building
-RUN npm ci
+# Install dependencies from package-lock.json
+RUN npm install --frozen-lockfile
 
 # Copy source code
 COPY src ./src
 
 # Build TypeScript
 RUN npm run build
-
-# Production stage
-FROM node:18-alpine
-
-WORKDIR /app
-
-# Copy only production dependencies
-COPY package*.json ./
-RUN npm ci --only=production
-
-# Copy built files from builder stage
-COPY --from=builder /app/dist ./dist
 
 EXPOSE 2567
 
