@@ -1,19 +1,15 @@
-FROM node:18-alpine
+FROM node:18
 
 WORKDIR /app
 
-# Install build essentials
-RUN apk add --no-cache python3 make g++
+# Copy only files needed for install
+COPY package.json ./
 
-# Copy package files
-COPY package*.json ./
-COPY tsconfig.json ./
+# Install with minimal output and no lockfile verification
+RUN npm install --quiet --no-progress
 
-# Install dependencies from package-lock.json
-RUN npm install --frozen-lockfile
-
-# Copy source code
-COPY src ./src
+# Copy rest of the files
+COPY . .
 
 # Build TypeScript
 RUN npm run build
