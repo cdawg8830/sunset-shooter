@@ -8,8 +8,11 @@ import { DuelRoom } from './rooms/DuelRoom';
 const port = Number(process.env.PORT || 2567);
 const app = express();
 
-// Enable CORS
-app.use(cors());
+// Enable CORS with specific configuration
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
 
 const server = createServer(app);
 
