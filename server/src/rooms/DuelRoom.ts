@@ -1,14 +1,16 @@
-import { Room, Client } from "colyseus";
+import { Room, Client } from "@colyseus/core";
 import { DuelState, Player } from "./schema/DuelState";
 
 export class DuelRoom extends Room<DuelState> {
     maxClients = 2;
+    state!: DuelState;
     
-    onCreate() {
-        this.setState(new DuelState());
+    async onCreate() {
+        this.state = new DuelState();
+        this.setState(this.state);
 
         // Handle player shooting
-        this.onMessage("shoot", (client, message) => {
+        this.onMessage("shoot", (client: Client, message: any) => {
             const player = this.state.players.get(client.sessionId);
             if (!player || player.hasShot) return;
 
@@ -28,7 +30,7 @@ export class DuelRoom extends Room<DuelState> {
         });
 
         // Handle player ready state
-        this.onMessage("ready", (client) => {
+        this.onMessage("ready", (client: Client) => {
             const player = this.state.players.get(client.sessionId);
             if (player) {
                 player.ready = true;
@@ -57,7 +59,7 @@ export class DuelRoom extends Room<DuelState> {
     private checkStartGame() {
         // Check if all players are ready
         let allReady = true;
-        this.state.players.forEach((player) => {
+        this.state.players.forEach((player: Player) => {
             if (!player.ready) allReady = false;
         });
 
@@ -70,23 +72,23 @@ export class DuelRoom extends Room<DuelState> {
         this.state.gamePhase = "countdown";
         
         // Reset player states
-        this.state.players.forEach((player) => {
+        this.state.players.forEach((player: Player) => {
             player.hasShot = false;
             player.reactionTime = 0;
         });
 
         // Start countdown sequence
-        setTimeout(() => {
+        this.clock.setTimeout(() => {
             this.state.gamePhase = "ready";
         }, 1000);
 
-        setTimeout(() => {
+        this.clock.setTimeout(() => {
             this.state.gamePhase = "steady";
         }, 2000);
 
         // Random delay before DRAW
         const randomDelay = 1000 + Math.random() * 2000;
-        setTimeout(() => {
+        this.clock.setTimeout(() => {
             this.state.gamePhase = "draw";
             this.state.drawSignalTime = Date.now();
         }, 3000 + randomDelay);
@@ -94,15 +96,15 @@ export class DuelRoom extends Room<DuelState> {
 
     private checkGameEnd() {
         let allShot = true;
-        this.state.players.forEach((player) => {
+        this.state.players.forEach((player: Player) => {
             if (!player.hasShot) allShot = false;
         });
 
         if (allShot) {
             this.state.gamePhase = "result";
             // Game will reset after a delay
-            setTimeout(() => {
-                this.state.players.forEach((player) => {
+            this.clock.setTimeout(() => {
+                this.state.players.forEach((player: Player) => {
                     player.ready = false;
                 });
                 this.state.gamePhase = "waiting";
