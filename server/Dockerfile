@@ -2,19 +2,18 @@ FROM node:18-slim
 
 WORKDIR /app
 
-# Install TypeScript globally
-RUN npm install -g typescript@5.0.0
+# Copy package files first
+COPY package*.json ./
 
-# Copy only what's needed
-COPY package.json .
-COPY tsconfig.json .
+# Install all dependencies (including TypeScript)
+RUN npm install
+
+# Copy source code
+COPY tsconfig.json ./
 COPY src ./src
 
-# Install dependencies
-RUN npm install --omit=dev
-
-# Build
-RUN tsc
+# Build using npx to ensure local typescript is used
+RUN npm run build
 
 EXPOSE 2567
 
