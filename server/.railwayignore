@@ -1,0 +1,6 @@
+# Ignore everything outside server directory
+../client/
+../node_modules/
+../.next/
+../.git/
+../README.md 
