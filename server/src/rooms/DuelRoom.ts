@@ -103,6 +103,36 @@ export class DuelRoom extends Room<DuelState> {
     private showResults() {
         this.state.gamePhase = "result";
         
+        // Calculate winner and update stats
+        const players = Array.from(this.state.players.values());
+        const [player1, player2] = players;
+        
+        if (player1 && player2) {
+            // Update total games for both players
+            player1.totalGames++;
+            player2.totalGames++;
+            
+            // Update fastest reaction times (only if they didn't shoot early)
+            if (player1.reactionTime > 0 && player1.reactionTime < player1.fastestReaction) {
+                player1.fastestReaction = player1.reactionTime;
+            }
+            if (player2.reactionTime > 0 && player2.reactionTime < player2.fastestReaction) {
+                player2.fastestReaction = player2.reactionTime;
+            }
+            
+            // Determine winner
+            if (player1.reactionTime === -1) {
+                player2.wins++; // Player 1 shot too early
+            } else if (player2.reactionTime === -1) {
+                player1.wins++; // Player 2 shot too early
+            } else if (player1.reactionTime < player2.reactionTime) {
+                player1.wins++; // Player 1 was faster
+            } else if (player2.reactionTime < player1.reactionTime) {
+                player2.wins++; // Player 2 was faster
+            }
+            // If exactly equal, no one gets a win
+        }
+        
         // Reset for next round after delay
         setTimeout(() => {
             this.state.players.forEach(player => {

@@ -6,6 +6,10 @@ interface Player {
     ready: boolean;
     hasShot: boolean;
     reactionTime: number;
+    username: string;
+    wins: number;
+    totalGames: number;
+    fastestReaction: number;
 }
 
 interface GameState {
@@ -28,6 +32,8 @@ export class DuelScene extends Phaser.Scene {
     private buildings: Phaser.GameObjects.Rectangle[] = [];
     private username: string = '';
     private usernameInput?: HTMLInputElement;
+    private scoreText?: Phaser.GameObjects.Text;
+    private statsText?: Phaser.GameObjects.Text;
 
     constructor() {
         super({ key: 'DuelScene' });
@@ -54,8 +60,32 @@ export class DuelScene extends Phaser.Scene {
             { ...textConfig, fontSize: '24px' }
         ).setOrigin(0.5);
 
-        // Create username input
-        this.createUsernameInput();
+        // Add score text
+        this.scoreText = this.add.text(
+            10,
+            10,
+            '',
+            textConfig
+        );
+
+        // Add stats text
+        this.statsText = this.add.text(
+            10,
+            40,
+            '',
+            textConfig
+        );
+
+        // Check for saved username
+        const savedUsername = localStorage.getItem('username');
+        if (savedUsername) {
+            this.username = savedUsername;
+            this.connectToServer();
+            this.statusText.setText('Connecting...');
+        } else {
+            // Create username input
+            this.createUsernameInput();
+        }
 
         // Create opponent placeholder
         this.createOpponent();
@@ -198,6 +228,8 @@ export class DuelScene extends Phaser.Scene {
             const username = this.usernameInput?.value.trim();
             if (username && username.length >= 2) {
                 this.username = username;
+                // Save username
+                localStorage.setItem('username', username);
                 // Remove input elements
                 this.usernameInput?.remove();
                 submitButton.remove();
@@ -294,7 +326,7 @@ export class DuelScene extends Phaser.Scene {
 
         this.room.onStateChange((state: GameState) => {
             console.log('Game state updated:', state.gamePhase);
-            this.statusText?.setText(`Players: ${state.players.size}/2`);
+            this.updateScores(); // Update scores whenever state changes
             
             switch (state.gamePhase) {
                 case 'waiting':
@@ -326,6 +358,7 @@ export class DuelScene extends Phaser.Scene {
 
         this.room.onMessage("full", () => {
             this.statusText?.setText('Game ready! Press READY to start');
+            this.readyButton?.setVisible(true);
         });
     }
 
@@ -432,5 +465,38 @@ export class DuelScene extends Phaser.Scene {
             yoyo: true,
             ease: 'Power1'
         });
+    }
+
+    private updateScores() {
+        if (!this.room) return;
+
+        interface PlayerState {
+            id: string;
+            username: string;
+            wins: number;
+            totalGames: number;
+            fastestReaction: number;
+        }
+
+        const players = Array.from(this.room.state.players.values()) as PlayerState[];
+        const myPlayer = players.find(p => p.id === this.room?.sessionId);
+        const otherPlayer = players.find(p => p.id !== this.room?.sessionId);
+
+        // Update score text
+        if (myPlayer && otherPlayer) {
+            this.scoreText?.setText(
+                `${myPlayer.username}: ${myPlayer.wins} wins  |  ${otherPlayer.username}: ${otherPlayer.wins} wins`
+            );
+            
+            // Update personal stats
+            this.statsText?.setText(
+                `Your stats:\nTotal games: ${myPlayer.totalGames}\nFastest reaction: ${myPlayer.fastestReaction === 99999 ? '-' : myPlayer.fastestReaction + 'ms'}`
+            );
+        } else if (myPlayer) {
+            this.scoreText?.setText(`${myPlayer.username}: ${myPlayer.wins} wins  |  Waiting for opponent...`);
+            this.statsText?.setText(
+                `Your stats:\nTotal games: ${myPlayer.totalGames}\nFastest reaction: ${myPlayer.fastestReaction === 99999 ? '-' : myPlayer.fastestReaction + 'ms'}`
+            );
+        }
     }
 } 
