@@ -178,7 +178,11 @@ export class DuelScene extends Phaser.Scene {
             });
             
             console.log('Creating Colyseus client...');
-            this.client = new Client(wsUrl);
+            this.client = new Client(wsUrl, {
+                requestInit: {
+                    credentials: 'omit'
+                }
+            });
             
             console.log('Attempting to join room "duel"...');
             this.room = await this.client.joinOrCreate('duel');

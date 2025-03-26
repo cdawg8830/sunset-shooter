@@ -15,8 +15,16 @@ app.use((req, res, next) => {
     next();
 });
 
-// Basic CORS middleware
-app.use(cors());
+// CORS middleware
+app.use(cors({
+    origin: ['https://www.sunsetshooter.com', 'http://localhost:3000'],
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false
+}));
+
+// Add CORS preflight handling
+app.options('*', cors());
 
 // Basic health check endpoint
 app.get('/', (req, res) => {
@@ -35,16 +43,7 @@ const gameServer = new Server({
     transport: new WebSocketTransport({
         server,
         pingInterval: 5000,
-        pingMaxRetries: 3,
-        // @ts-ignore - These options are supported by ws but not typed in Colyseus
-        verifyClient: (info: any, callback: any) => {
-            // Accept all WebSocket connections
-            callback(true);
-        },
-        handleProtocols: (protocols: string[], request: any) => {
-            // Accept any protocol
-            return protocols[0];
-        }
+        pingMaxRetries: 3
     })
 });
 
