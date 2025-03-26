@@ -17,19 +17,43 @@ app.use((req, res, next) => {
 
 // Enable CORS with specific configuration
 app.use(cors({
-    origin: ["https://www.sunsetshooter.com", "https://sunsetshooter.com", "http://localhost:3000"],
+    origin: true, // Allow all origins
     methods: ['GET', 'POST', 'OPTIONS', 'HEAD', 'PATCH', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Access-Control-Allow-Origin'],
-    exposedHeaders: ['Access-Control-Allow-Origin'],
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'Accept',
+        'Access-Control-Allow-Origin',
+        'Access-Control-Allow-Headers',
+        'Access-Control-Allow-Methods',
+        'Access-Control-Allow-Credentials',
+        'Access-Control-Expose-Headers',
+        'Upgrade',
+        'Connection'
+    ],
+    exposedHeaders: [
+        'Access-Control-Allow-Origin',
+        'Access-Control-Allow-Headers',
+        'Access-Control-Allow-Methods',
+        'Access-Control-Allow-Credentials',
+        'Access-Control-Expose-Headers'
+    ],
     credentials: true,
     maxAge: 86400 // Cache preflight requests for 24 hours
 }));
 
 // Handle preflight requests
-app.options('*', cors({
-    origin: ["https://www.sunsetshooter.com", "https://sunsetshooter.com", "http://localhost:3000"],
-    credentials: true
-}));
+app.options('*', cors());
+
+// Add WebSocket upgrade headers
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    next();
+});
 
 // Basic health check endpoint
 app.get('/', (req, res) => {
