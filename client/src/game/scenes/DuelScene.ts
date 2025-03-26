@@ -310,36 +310,64 @@ export class DuelScene extends Phaser.Scene {
             
             // Convert https:// to wss:// for WebSocket connection
             const baseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:2567';
+            const httpUrl = baseUrl.replace('wss://', 'https://').replace('ws://', 'http://');
             const wsUrl = baseUrl.replace('https://', 'wss://').replace('http://', 'ws://');
             
             console.log('Connection details:', {
                 username: this.username,
                 NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL,
                 baseUrl: baseUrl,
+                httpUrl: httpUrl,
                 wsUrl: wsUrl,
                 retryCount: retryCount
             });
-            
-            console.log('Creating Colyseus client...');
-            this.client = new Client(wsUrl);
-            
-            console.log('Attempting to join room "duel"...');
-            // Only send username, no additional options
-            this.room = await this.client.joinOrCreate('duel', { username: this.username });
-            
-            if (!this.room) {
-                throw new Error('Failed to create or join room - room is null');
+
+            // Step 1: Perform HTTP request to get room data
+            console.log('Requesting room data via HTTP...');
+            try {
+                const response = await fetch(`${httpUrl}/matchmake/joinOrCreate/duel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'omit', // Explicitly omit credentials
+                    body: JSON.stringify({ username: this.username })
+                });
+                
+                // If we successfully get a response, create a client manually
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Room data received:', data);
+                    
+                    // Now we can manually create a client
+                    console.log('Creating Colyseus client...');
+                    this.client = new Client(wsUrl);
+                    
+                    console.log('Manually connecting to room...');
+                    // Use the direct consumeSeatReservation method
+                    this.room = await this.client.consumeSeatReservation(data);
+                    
+                    if (!this.room) {
+                        throw new Error('Failed to create or join room - room is null');
+                    }
+                    
+                    console.log('Successfully connected and joined room:', {
+                        username: this.username,
+                        sessionId: this.room.sessionId,
+                        roomId: this.room.id,
+                        roomName: this.room.name
+                    });
+                    
+                    this.setupRoomHandlers();
+                } else {
+                    console.error('Failed to get room data:', await response.text());
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+            } catch (httpError) {
+                console.error('HTTP request failed:', httpError);
+                throw httpError;
             }
-            
-            console.log('Successfully connected and joined room:', {
-                username: this.username,
-                sessionId: this.room.sessionId,
-                roomId: this.room.id,
-                roomName: this.room.name
-            });
-            
-            this.setupRoomHandlers();
-            
         } catch (error: any) {
             console.error("Connection error details:", {
                 name: error?.name,
