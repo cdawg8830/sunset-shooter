@@ -15,8 +15,22 @@ app.use((req, res, next) => {
     next();
 });
 
-// CORS middleware - allow all origins
-app.use(cors());
+// CORS middleware with explicit configuration
+app.use(cors({
+    origin: true, // Allow all origins
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'Connection', 'Upgrade', 'Sec-WebSocket-Key', 'Sec-WebSocket-Version'],
+    credentials: false
+}));
+
+// Handle WebSocket upgrade requests
+app.use((req, res, next) => {
+    if (req.headers.upgrade === 'websocket') {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Credentials', 'false');
+    }
+    next();
+});
 
 // Basic health check endpoint
 app.get('/', (req, res) => {

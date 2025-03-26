@@ -182,6 +182,7 @@ export class DuelScene extends Phaser.Scene {
             console.log('Creating Colyseus client...');
             this.client = new Client(wsUrl);
             
+            // Attempt connection without credentials
             console.log('Attempting to join room "duel"...');
             this.room = await this.client.joinOrCreate('duel');
             
@@ -205,15 +206,9 @@ export class DuelScene extends Phaser.Scene {
                 retryCount: retryCount,
                 wsUrl: process.env.NEXT_PUBLIC_WS_URL,
                 origin: window.location.origin,
-                protocol: window.location.protocol
+                protocol: window.location.protocol,
+                error: error // Log the full error object
             });
-
-            if (error instanceof Error) {
-                console.error("Full error object:", {
-                    ...error,
-                    cause: error.cause
-                });
-            }
 
             this.statusText?.setText('Connection failed! Retrying...');
             
