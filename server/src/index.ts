@@ -10,9 +10,16 @@ const app = express();
 
 // Enable CORS with specific configuration
 app.use(cors({
-    origin: true,
-    credentials: true
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 const server = createServer(app);
 

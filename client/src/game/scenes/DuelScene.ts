@@ -170,6 +170,8 @@ export class DuelScene extends Phaser.Scene {
             // Ensure we're using wss:// for production
             if (wsUrl.startsWith('https://')) {
                 wsUrl = wsUrl.replace('https://', 'wss://');
+            } else if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
+                wsUrl = `wss://${wsUrl}`;
             }
             
             console.log('Connecting to WebSocket server at:', wsUrl);
