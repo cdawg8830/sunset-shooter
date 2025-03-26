@@ -24,17 +24,7 @@ const allowedOrigins = [
 
 // CORS middleware with explicit configuration
 app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, origin);
-        } else {
-            console.log('Origin not allowed:', origin);
-            callback(null, allowedOrigins[0]); // Default to main domain
-        }
-    },
+    origin: true, // Allow all origins for now
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'Connection', 'Upgrade', 'Sec-WebSocket-Key', 'Sec-WebSocket-Version'],
     credentials: true
@@ -42,16 +32,10 @@ app.use(cors({
 
 // Handle WebSocket upgrade requests
 app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (req.headers.upgrade === 'websocket') {
-        // Set CORS headers for WebSocket upgrade
-        if (origin && allowedOrigins.includes(origin)) {
-            res.setHeader('Access-Control-Allow-Origin', origin);
-        } else {
-            res.setHeader('Access-Control-Allow-Origin', allowedOrigins[0]);
-        }
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-    }
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,OPTIONS,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Connection, Upgrade, Sec-WebSocket-Key, Sec-WebSocket-Version');
     next();
 });
 
