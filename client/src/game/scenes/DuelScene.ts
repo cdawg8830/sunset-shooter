@@ -165,7 +165,8 @@ export class DuelScene extends Phaser.Scene {
     private async connectToServer(retryCount = 0) {
         try {
             console.log('Attempting to connect to server...');
-            // Use the Railway URL directly - Colyseus will handle the protocol conversion
+            // Use the HTTPS URL directly from Railway (e.g., https://sunset-shooter-production.up.railway.app)
+            // Colyseus will automatically convert this to WebSocket protocol internally
             const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:2567';
             
             console.log('Environment:', {
