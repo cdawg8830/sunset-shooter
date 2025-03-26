@@ -34,6 +34,8 @@ export class DuelScene extends Phaser.Scene {
     private usernameInput?: HTMLInputElement;
     private scoreText?: Phaser.GameObjects.Text;
     private statsText?: Phaser.GameObjects.Text;
+    private currentWidth: number = 0;
+    private currentHeight: number = 0;
 
     constructor() {
         super({ key: 'DuelScene' });
@@ -41,8 +43,10 @@ export class DuelScene extends Phaser.Scene {
 
     create() {
         // Make game responsive
-        this.scale.on('resize', this.resize, this);
-        this.resize();
+        this.scale.on('resize', this.handleResize, this);
+        this.currentWidth = window.innerWidth;
+        this.currentHeight = window.innerHeight;
+        this.handleResize();
 
         // Create background elements
         this.createBackground();
@@ -119,9 +123,18 @@ export class DuelScene extends Phaser.Scene {
         });
     }
 
-    private resize() {
+    private handleResize() {
         const width = window.innerWidth;
         const height = window.innerHeight;
+
+        // Only update if dimensions actually changed
+        if (width === this.currentWidth && height === this.currentHeight) {
+            return;
+        }
+
+        this.currentWidth = width;
+        this.currentHeight = height;
+
         this.scale.resize(width, height);
 
         // Update positions of UI elements
@@ -132,7 +145,7 @@ export class DuelScene extends Phaser.Scene {
             this.countdownText.setPosition(width / 2, height / 2);
         }
         if (this.opponent) {
-            this.opponent.setPosition(width / 2, height / 2 + 20); // Adjusted Y position
+            this.opponent.setPosition(width / 2, height / 2 + 20);
         }
         if (this.gunContainer) {
             this.gunContainer.setPosition(width / 2, height - 150);
@@ -173,26 +186,33 @@ export class DuelScene extends Phaser.Scene {
         }
     }
 
+    private createMuzzleFlash() {
+        // Create muzzle flash container
+        const muzzleFlash = this.add.container(0, -30);
+        
+        // Create a simple pixel art muzzle flash using shapes instead of sprite
+        const flash = this.add.rectangle(0, 0, 20, 20, 0xffff00);
+        const innerFlash = this.add.rectangle(0, 0, 12, 12, 0xffffff);
+        flash.setAlpha(0.8);
+        innerFlash.setAlpha(0.9);
+        
+        muzzleFlash.add([flash, innerFlash]);
+        muzzleFlash.setVisible(false);
+        
+        this.muzzleFlash = muzzleFlash;
+    }
+
     private createGun() {
         // Create a container for the gun
         this.gunContainer = this.add.container(this.scale.width / 2, this.scale.height - 150);
         
-        // Create muzzle flash container
-        this.muzzleFlash = this.add.container(0, -30);
+        // Create muzzle flash
+        this.createMuzzleFlash();
         
         // Add the gun sprite
         const gun = this.add.sprite(0, 0, 'revolver');
         gun.setOrigin(0.5, 0.5);
         gun.setScale(0.8);
-        
-        // Create a simple pixel art muzzle flash
-        const flash = this.add.rectangle(0, 0, 20, 20, 0xffff00);
-        flash.setAlpha(0.8);
-        
-        if (this.muzzleFlash) {
-            this.muzzleFlash.add(flash);
-            this.muzzleFlash.setVisible(false);
-        }
         
         if (this.gunContainer) {
             this.gunContainer.add([gun]);
@@ -447,20 +467,28 @@ export class DuelScene extends Phaser.Scene {
         this.tweens.add({
             targets: this.gunContainer,
             rotation: -0.4,
-            y: '-=10', // Less vertical movement since it's higher up
+            y: '-=10',
             duration: 50,
             yoyo: true,
             ease: 'Power2'
         });
 
         // Brighter, more visible muzzle flash
-        this.muzzleFlash?.setVisible(true);
-        this.time.delayedCall(100, () => {
-            this.muzzleFlash?.setVisible(false);
-        });
+        if (this.muzzleFlash) {
+            this.muzzleFlash.setVisible(true);
+            this.time.delayedCall(100, () => {
+                this.muzzleFlash?.setVisible(false);
+            });
+        }
         
         // More intense screen shake
         this.cameras.main.shake(200, 0.008);
+
+        // Try to resume audio context after user interaction
+        const soundManager = this.game.sound;
+        if ('context' in soundManager && soundManager.context.state === 'suspended') {
+            soundManager.context.resume();
+        }
     }
 
     private showResult(state: GameState) {
