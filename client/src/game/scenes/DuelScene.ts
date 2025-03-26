@@ -318,18 +318,22 @@ export class DuelScene extends Phaser.Scene {
                 baseUrl: baseUrl,
                 wsUrl: wsUrl,
                 origin: window.location.origin,
-                protocol: window.location.protocol,
                 retryCount: retryCount
             });
             
             console.log('Creating Colyseus client...');
-            // Create client without credentials mode
             this.client = new Client(wsUrl);
             
             console.log('Attempting to join room "duel"...');
-            this.room = await this.client.joinOrCreate('duel', { 
-                username: this.username 
-            });
+            // Add explicit connection options
+            const connectionOptions = {
+                username: this.username,
+                headers: {
+                    'Origin': window.location.origin
+                }
+            };
+            
+            this.room = await this.client.joinOrCreate('duel', connectionOptions);
             
             if (!this.room) {
                 throw new Error('Failed to create or join room - room is null');
@@ -351,8 +355,6 @@ export class DuelScene extends Phaser.Scene {
                 stack: error?.stack,
                 retryCount: retryCount,
                 wsUrl: process.env.NEXT_PUBLIC_WS_URL,
-                origin: window.location.origin,
-                protocol: window.location.protocol,
                 error: error
             });
 
