@@ -170,7 +170,7 @@ export class DuelScene extends Phaser.Scene {
             if (isPortrait && this.cameras.main) {
                 // For portrait, adjust zoom and camera
                 this.scale.scaleMode = Phaser.Scale.ENVELOP;
-                this.cameras.main.setZoom(1.5);
+                this.cameras.main.setZoom(1.2);
                 this.cameras.main.centerOn(this.scale.width / 2, this.scale.height / 2);
             } else if (this.cameras.main) {
                 // For landscape, reset to normal view
@@ -190,7 +190,7 @@ export class DuelScene extends Phaser.Scene {
 
         // Update positions of UI elements
         if (this.statusText) {
-            this.statusText.setPosition(width / 2, this.registry.get('isMobile') ? 20 : 30);
+            this.statusText.setPosition(width / 2, this.registry.get('isMobile') ? 40 : 30);
             this.statusText.setFontSize(this.registry.get('isMobile') ? '18px' : '24px');
         }
         
@@ -210,7 +210,7 @@ export class DuelScene extends Phaser.Scene {
         // Adjust score and stats text for better mobile viewing
         if (this.scoreText) {
             if (this.registry.get('isMobile')) {
-                this.scoreText.setPosition(width / 2, 50);
+                this.scoreText.setPosition(width / 2, 100);
                 this.scoreText.setOrigin(0.5);
                 this.scoreText.setFontSize('14px');
             } else {
@@ -222,7 +222,7 @@ export class DuelScene extends Phaser.Scene {
         
         if (this.statsText) {
             if (this.registry.get('isMobile')) {
-                this.statsText.setPosition(width / 2, 80);
+                this.statsText.setPosition(width / 2, 130);
                 this.statsText.setOrigin(0.5);
                 this.statsText.setFontSize('14px');
             } else {
@@ -233,15 +233,29 @@ export class DuelScene extends Phaser.Scene {
         }
         
         if (this.readyButton) {
-            this.readyButton.setPosition(width / 2, height - (this.registry.get('isMobile') ? 40 : 50));
+            if (this.registry.get('isMobile')) {
+                this.readyButton.setPosition(width / 2, height - 80);
+                
+                // Make sure button is visible and easy to tap
+                const readyBg = this.readyButton.getAt(0) as Phaser.GameObjects.Rectangle;
+                if (readyBg) {
+                    readyBg.setSize(160, 60);
+                }
+                
+                const readyText = this.readyButton.getAt(1) as Phaser.GameObjects.Text;
+                if (readyText) {
+                    readyText.setFontSize('22px');
+                }
+            } else {
+                this.readyButton.setPosition(width / 2, height - 50);
+            }
         }
         
         if (this.shootButton) {
-            this.shootButton.setPosition(width / 2, height - (this.registry.get('isMobile') ? 40 : 50));
-            
-            // Make shoot button larger on mobile
             if (this.registry.get('isMobile')) {
-                // Find the button background and resize it
+                this.shootButton.setPosition(width / 2, height - 80);
+                
+                // Make shoot button larger on mobile
                 const shootBg = this.shootButton.getAt(0) as Phaser.GameObjects.Rectangle;
                 if (shootBg) {
                     shootBg.setSize(160, 60);
@@ -252,6 +266,8 @@ export class DuelScene extends Phaser.Scene {
                 if (shootText) {
                     shootText.setFontSize('22px');
                 }
+            } else {
+                this.shootButton.setPosition(width / 2, height - 50);
             }
         }
     }
@@ -262,6 +278,7 @@ export class DuelScene extends Phaser.Scene {
                         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
         if (isMobile) {
+            console.log('Mobile device detected, applying mobile optimizations');
             // Store mobile state for reference
             this.registry.set('isMobile', true);
             
@@ -273,11 +290,12 @@ export class DuelScene extends Phaser.Scene {
             this.scale.scaleMode = Phaser.Scale.FIT;
             
             if (isPortrait) {
+                console.log('Portrait mode detected, adjusting layout');
                 // For portrait, use ENVELOP to make content bigger (might crop sides)
                 this.scale.scaleMode = Phaser.Scale.ENVELOP;
                 
-                // Increase camera zoom for portrait mode to focus on the center
-                this.cameras.main.setZoom(1.5);
+                // Increase camera zoom for portrait mode to focus on the center, but not too much
+                this.cameras.main.setZoom(1.2);
                 
                 // Center the camera on the main elements
                 this.cameras.main.centerOn(this.scale.width / 2, this.scale.height / 2);
@@ -290,19 +308,37 @@ export class DuelScene extends Phaser.Scene {
             if (canvas) {
                 canvas.style.width = '100%';
                 canvas.style.height = '100%';
+                canvas.style.maxHeight = '100vh';
+                canvas.style.maxWidth = '100vw';
+            }
+            
+            // Force a full screen layout on iOS Safari
+            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                document.documentElement.style.height = '100%';
+                document.body.style.height = '100%';
+                document.body.style.margin = '0';
+                document.body.style.padding = '0';
+                document.body.style.overflow = 'hidden';
+                
+                if (canvas) {
+                    canvas.style.position = 'absolute';
+                    canvas.style.top = '0';
+                    canvas.style.left = '0';
+                }
             }
             
             // Set up orientation change handling
             window.addEventListener('orientationchange', () => {
                 // Wait a bit for the orientation change to complete
                 setTimeout(() => {
+                    console.log('Orientation changed, updating layout');
                     const newIsPortrait = window.innerHeight > window.innerWidth;
                     this.registry.set('isPortrait', newIsPortrait);
                     
                     if (newIsPortrait) {
                         // For portrait, adjust zoom and camera
                         this.scale.scaleMode = Phaser.Scale.ENVELOP;
-                        this.cameras.main.setZoom(1.5);
+                        this.cameras.main.setZoom(1.2);
                         this.cameras.main.centerOn(this.scale.width / 2, this.scale.height / 2);
                     } else {
                         // For landscape, reset to normal view
@@ -483,6 +519,13 @@ export class DuelScene extends Phaser.Scene {
         }).setOrigin(0.5);
         this.readyButton.add([readyBg, readyText]);
 
+        // For mobile, make button bigger
+        if (this.registry.get('isMobile')) {
+            readyBg.setSize(160, 60);
+            readyText.setFontSize('22px');
+            this.readyButton.setPosition(this.scale.width / 2, this.scale.height - 80);
+        }
+
         // Create Shoot button (initially invisible)
         this.shootButton = this.add.container(this.scale.width / 2, this.scale.height - 50);
         const shootBg = this.add.rectangle(0, 0, 120, 40, 0xff0000)
@@ -495,6 +538,13 @@ export class DuelScene extends Phaser.Scene {
         this.shootButton.add([shootBg, shootText]);
         this.shootButton.setVisible(false);
 
+        // For mobile, make button bigger
+        if (this.registry.get('isMobile')) {
+            shootBg.setSize(160, 60);
+            shootText.setFontSize('22px');
+            this.shootButton.setPosition(this.scale.width / 2, this.scale.height - 80);
+        }
+
         // Create Leaderboard button
         const leaderboardButton = this.add.container(this.scale.width - 40, 30);
         const leaderboardBg = this.add.rectangle(0, 0, 30, 30, 0x333333, 0.7)
@@ -504,19 +554,47 @@ export class DuelScene extends Phaser.Scene {
         }).setOrigin(0.5);
         leaderboardButton.add([leaderboardBg, leaderboardIcon]);
 
+        // For mobile, make leaderboard button bigger
+        if (this.registry.get('isMobile')) {
+            leaderboardBg.setSize(40, 40);
+            leaderboardIcon.setFontSize('24px');
+        }
+
         // Add button handlers
         readyBg.on('pointerdown', () => this.handleReady());
         shootBg.on('pointerdown', () => this.handleShoot());
         leaderboardBg.on('pointerdown', () => this.showLeaderboard());
+        
+        // Add tap instructions for mobile
+        if (this.registry.get('isMobile')) {
+            const tapHint = this.add.text(
+                this.scale.width / 2,
+                this.scale.height - 140,
+                'Tap button when ready',
+                {
+                    fontSize: '14px',
+                    fontFamily: 'monospace',
+                    color: '#ffffff',
+                    stroke: '#000000',
+                    strokeThickness: 3
+                }
+            ).setOrigin(0.5);
+            
+            // Store reference to remove later
+            this.registry.set('tapHint', tapHint);
+        }
     }
 
     private createUsernameInput() {
         try {
             console.log('Creating username input');
             
+            // Always show switch user button option
+            const showSwitchUser = this.registry.get('showSwitchUser') || false;
+            
             // Check if we already have a stored username
             const savedUsername = localStorage.getItem('username');
-            if (savedUsername && savedUsername.length >= 2) {
+            if (savedUsername && savedUsername.length >= 2 && !showSwitchUser) {
                 console.log('Using saved username:', savedUsername);
                 this.username = savedUsername;
                 // Skip input creation and connect directly
@@ -524,8 +602,14 @@ export class DuelScene extends Phaser.Scene {
                 if (this.statusText) {
                     this.statusText.setText('Connecting...');
                 }
+                
+                // Add switch user button
+                this.addSwitchUserButton();
                 return;
             }
+            
+            // Reset showSwitchUser flag
+            this.registry.set('showSwitchUser', false);
             
             // Create HTML input element
             this.usernameInput = document.createElement('input');
@@ -543,6 +627,11 @@ export class DuelScene extends Phaser.Scene {
             this.usernameInput.style.textAlign = 'center';
             this.usernameInput.style.fontSize = '16px';
             this.usernameInput.style.width = '200px'; // Fixed width for better mobile display
+            
+            // If we have a saved username, pre-fill it
+            if (savedUsername) {
+                this.usernameInput.value = savedUsername;
+            }
             
             // Make input more mobile-friendly
             if (this.registry.get('isMobile')) {
@@ -763,6 +852,9 @@ export class DuelScene extends Phaser.Scene {
         this.room.onLeave((code) => {
             console.log(`Left room: ${code}`);
             this.statusText?.setText('Disconnected from server');
+            
+            // Add switch user button when disconnected
+            this.addSwitchUserButton();
         });
 
         this.room.onStateChange((state: GameState) => {
@@ -809,6 +901,15 @@ export class DuelScene extends Phaser.Scene {
         this.muzzleFlash?.setVisible(false);
         this.readyButton?.setVisible(true);
         this.shootButton?.setVisible(false);
+        
+        // Show tap instruction for mobile
+        if (this.registry.get('isMobile')) {
+            const tapHint = this.registry.get('tapHint');
+            if (tapHint) {
+                tapHint.setText('Tap button when ready');
+                tapHint.setVisible(true);
+            }
+        }
     }
 
     private animateDraw() {
@@ -844,6 +945,15 @@ export class DuelScene extends Phaser.Scene {
 
         // Show shoot button
         this.shootButton?.setVisible(true);
+        
+        // Update tap instruction for mobile
+        if (this.registry.get('isMobile')) {
+            const tapHint = this.registry.get('tapHint');
+            if (tapHint) {
+                tapHint.setText('Tap SHOOT to fire!');
+                tapHint.setVisible(true);
+            }
+        }
     }
 
     private handleReady() {
@@ -1272,6 +1382,57 @@ export class DuelScene extends Phaser.Scene {
         document.addEventListener('keydown', unlockAudio, false);
     }
 
+    private addSwitchUserButton() {
+        // Create a switch user button that appears when game is in waiting mode or disconnected
+        const switchUserButton = document.createElement('button');
+        switchUserButton.textContent = '👤 Switch User';
+        switchUserButton.style.position = 'absolute';
+        switchUserButton.style.right = '10px';
+        switchUserButton.style.top = '10px';
+        switchUserButton.style.padding = '8px 12px';
+        switchUserButton.style.border = '2px solid #3498db';
+        switchUserButton.style.borderRadius = '4px';
+        switchUserButton.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        switchUserButton.style.color = '#3498db';
+        switchUserButton.style.cursor = 'pointer';
+        switchUserButton.style.fontSize = '14px';
+        switchUserButton.style.zIndex = '1000';
+        
+        // Store button ID for later removal
+        const buttonId = 'switch-user-btn-' + Date.now();
+        switchUserButton.id = buttonId;
+        
+        // Make button more visible on mobile
+        if (this.registry.get('isMobile')) {
+            switchUserButton.style.padding = '12px 16px';
+            switchUserButton.style.fontSize = '16px';
+        }
+        
+        document.body.appendChild(switchUserButton);
+        
+        // Handle switch user
+        switchUserButton.onclick = () => {
+            // Clear stored username
+            localStorage.removeItem('username');
+            
+            // Remove the button
+            document.getElementById(buttonId)?.remove();
+            
+            // Disconnect current room if connected
+            this.room?.leave();
+            
+            // Clean up any existing elements that might be left
+            document.querySelectorAll('input, button').forEach(el => {
+                if (el.id !== 'phaser-game') {
+                    el.remove();
+                }
+            });
+            
+            // Restart the scene
+            this.scene.restart();
+        };
+    }
+
     preload() {
         console.log('Preload started');
         
@@ -1377,6 +1538,19 @@ export class DuelScene extends Phaser.Scene {
             // Set the default registry values early
             this.registry.set('isMobile', false);
             this.registry.set('isPortrait', false);
+            
+            // Get URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const switchUser = urlParams.get('switchUser');
+            
+            // If URL has switchUser param, show the username input
+            if (switchUser === 'true') {
+                this.registry.set('showSwitchUser', true);
+                
+                // Remove the parameter from URL to avoid endless login loop
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
             
             // Initialize game state variables
             this.hasShot = false;
