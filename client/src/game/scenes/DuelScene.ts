@@ -61,6 +61,9 @@ export class DuelScene extends Phaser.Scene {
             // Attempt to unlock audio on mobile
             console.log('Unlocking audio');
             this.unlockAudio();
+            
+            // Add Vibe Jam 2025 link
+            this.addVibeJamLink();
     
             // Create pixel art style text
             const textConfig = {
@@ -1431,6 +1434,46 @@ export class DuelScene extends Phaser.Scene {
             // Restart the scene
             this.scene.restart();
         };
+    }
+
+    // Add Vibe Jam link to the page
+    private addVibeJamLink() {
+        try {
+            // Check if the element already exists
+            const existingLink = document.getElementById('vibe-jam-link');
+            if (existingLink) {
+                return; // Link already exists, don't create a duplicate
+            }
+            
+            // Create the Vibe Jam link element
+            const vibeJamLink = document.createElement('a');
+            vibeJamLink.id = 'vibe-jam-link';
+            vibeJamLink.href = 'https://jam.pieter.com';
+            vibeJamLink.target = '_blank';
+            vibeJamLink.innerHTML = '🕹️ Vibe Jam 2025';
+            
+            // Apply styles
+            vibeJamLink.style.fontFamily = 'system-ui, sans-serif';
+            vibeJamLink.style.position = 'fixed';
+            vibeJamLink.style.bottom = '-1px';
+            vibeJamLink.style.right = '-1px';
+            vibeJamLink.style.padding = '7px';
+            vibeJamLink.style.fontSize = '14px';
+            vibeJamLink.style.fontWeight = 'bold';
+            vibeJamLink.style.background = '#fff';
+            vibeJamLink.style.color = '#000';
+            vibeJamLink.style.textDecoration = 'none';
+            vibeJamLink.style.borderTopLeftRadius = '12px';
+            vibeJamLink.style.zIndex = '10000';
+            vibeJamLink.style.border = '1px solid #fff';
+            
+            // Add to document
+            document.body.appendChild(vibeJamLink);
+            
+            console.log('Vibe Jam link added to page');
+        } catch (error) {
+            console.error('Error adding Vibe Jam link:', error);
+        }
     }
 
     preload() {
