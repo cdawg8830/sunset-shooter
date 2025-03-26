@@ -331,10 +331,13 @@ export class DuelScene extends Phaser.Scene {
             });
             
             console.log('Creating Colyseus client...');
+            // Create client without credentials mode
             this.client = new Client(wsUrl);
             
             console.log('Attempting to join room "duel"...');
-            this.room = await this.client.joinOrCreate('duel', { username: this.username });
+            this.room = await this.client.joinOrCreate('duel', { 
+                username: this.username 
+            });
             
             if (!this.room) {
                 throw new Error('Failed to create or join room - room is null');
