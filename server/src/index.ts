@@ -15,16 +15,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// CORS middleware
-app.use(cors({
-    origin: ['https://www.sunsetshooter.com', 'http://localhost:3000'],
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: false
-}));
-
-// Add CORS preflight handling
-app.options('*', cors());
+// CORS middleware - allow all origins
+app.use(cors());
 
 // Basic health check endpoint
 app.get('/', (req, res) => {
@@ -37,6 +29,7 @@ app.get('/', (req, res) => {
     });
 });
 
+// WebSocket server setup
 const server = createServer(app);
 
 const gameServer = new Server({
@@ -55,7 +48,8 @@ gameServer.listen(port).then(() => {
     console.log(`🎮 Game server started on port ${port}`);
     console.log('Server configuration:', {
         port,
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
+        cors: 'enabled with all origins'
     });
 }).catch((err) => {
     console.error(err);
