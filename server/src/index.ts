@@ -4,6 +4,8 @@ import { createServer } from 'http';
 import express from 'express';
 import cors from 'cors';
 import { DuelRoom } from './rooms/DuelRoom';
+import path from 'path';
+import fs from 'fs';
 
 const port = Number(process.env.PORT || 2567);
 const app = express();
@@ -48,6 +50,43 @@ app.get('/', (req, res) => {
         environment: process.env.NODE_ENV || 'development',
         allowedOrigins
     });
+});
+
+// Leaderboard API endpoint
+app.get('/leaderboard', (req, res) => {
+    console.log('Leaderboard endpoint accessed');
+    
+    try {
+        // Read the leaderboard file directly
+        const leaderboardPath = path.join(__dirname, '..', 'leaderboard.json');
+        
+        if (fs.existsSync(leaderboardPath)) {
+            const data = fs.readFileSync(leaderboardPath, 'utf8');
+            const leaderboard = JSON.parse(data);
+            
+            // Sort by wins and limit to top players
+            const limit = Number(req.query.limit) || 10;
+            const sortedLeaderboard = [...leaderboard]
+                .sort((a, b) => b.wins - a.wins)
+                .slice(0, limit);
+            
+            res.status(200).json({
+                status: 'ok',
+                leaderboard: sortedLeaderboard
+            });
+        } else {
+            res.status(200).json({
+                status: 'ok',
+                leaderboard: []
+            });
+        }
+    } catch (error) {
+        console.error('Error accessing leaderboard:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to fetch leaderboard'
+        });
+    }
 });
 
 // WebSocket server setup
