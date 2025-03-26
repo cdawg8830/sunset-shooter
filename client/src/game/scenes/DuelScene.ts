@@ -26,6 +26,8 @@ export class DuelScene extends Phaser.Scene {
     private muzzleFlash?: Phaser.GameObjects.Container;
     private hasShot: boolean = false;
     private buildings: Phaser.GameObjects.Rectangle[] = [];
+    private username: string = '';
+    private usernameInput?: HTMLInputElement;
 
     constructor() {
         super({ key: 'DuelScene' });
@@ -48,17 +50,12 @@ export class DuelScene extends Phaser.Scene {
         this.statusText = this.add.text(
             400, 
             30, 
-            'Connecting...', 
+            'Enter your username to start', 
             { ...textConfig, fontSize: '24px' }
         ).setOrigin(0.5);
 
-        // Add countdown text
-        this.countdownText = this.add.text(
-            400,
-            200,
-            '',
-            { ...textConfig, fontSize: '48px' }
-        ).setOrigin(0.5);
+        // Create username input
+        this.createUsernameInput();
 
         // Create opponent placeholder
         this.createOpponent();
@@ -66,11 +63,9 @@ export class DuelScene extends Phaser.Scene {
         // Create gun placeholder
         this.createGun();
 
-        // Create buttons
+        // Create buttons (initially hidden)
         this.createButtons();
-
-        // Connect to server
-        this.connectToServer();
+        this.readyButton?.setVisible(false);
     }
 
     private createBackground() {
@@ -162,6 +157,59 @@ export class DuelScene extends Phaser.Scene {
         shootBg.on('pointerdown', () => this.handleShoot());
     }
 
+    private createUsernameInput() {
+        // Create HTML input element
+        this.usernameInput = document.createElement('input');
+        this.usernameInput.type = 'text';
+        this.usernameInput.placeholder = 'Enter username';
+        this.usernameInput.style.position = 'absolute';
+        this.usernameInput.style.left = '50%';
+        this.usernameInput.style.top = '100px';
+        this.usernameInput.style.transform = 'translateX(-50%)';
+        this.usernameInput.style.padding = '8px';
+        this.usernameInput.style.border = '2px solid #fff';
+        this.usernameInput.style.borderRadius = '4px';
+        this.usernameInput.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        this.usernameInput.style.color = '#fff';
+        this.usernameInput.style.textAlign = 'center';
+        this.usernameInput.style.fontSize = '16px';
+        
+        // Create submit button
+        const submitButton = document.createElement('button');
+        submitButton.textContent = 'Join Game';
+        submitButton.style.position = 'absolute';
+        submitButton.style.left = '50%';
+        submitButton.style.top = '150px';
+        submitButton.style.transform = 'translateX(-50%)';
+        submitButton.style.padding = '8px 16px';
+        submitButton.style.border = '2px solid #fff';
+        submitButton.style.borderRadius = '4px';
+        submitButton.style.backgroundColor = '#4CAF50';
+        submitButton.style.color = '#fff';
+        submitButton.style.cursor = 'pointer';
+        submitButton.style.fontSize = '16px';
+
+        // Add elements to DOM
+        document.body.appendChild(this.usernameInput);
+        document.body.appendChild(submitButton);
+
+        // Handle submit
+        submitButton.onclick = () => {
+            const username = this.usernameInput?.value.trim();
+            if (username && username.length >= 2) {
+                this.username = username;
+                // Remove input elements
+                this.usernameInput?.remove();
+                submitButton.remove();
+                // Start connection
+                this.connectToServer();
+                this.statusText?.setText('Connecting...');
+            } else {
+                this.statusText?.setText('Username must be at least 2 characters');
+            }
+        };
+    }
+
     private async connectToServer(retryCount = 0) {
         try {
             console.log('Attempting to connect to server...');
@@ -171,6 +219,7 @@ export class DuelScene extends Phaser.Scene {
             const wsUrl = baseUrl.replace('https://', 'wss://').replace('http://', 'ws://');
             
             console.log('Connection details:', {
+                username: this.username,
                 NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL,
                 baseUrl: baseUrl,
                 wsUrl: wsUrl,
@@ -182,15 +231,15 @@ export class DuelScene extends Phaser.Scene {
             console.log('Creating Colyseus client...');
             this.client = new Client(wsUrl);
             
-            // Attempt connection without credentials
             console.log('Attempting to join room "duel"...');
-            this.room = await this.client.joinOrCreate('duel');
+            this.room = await this.client.joinOrCreate('duel', { username: this.username });
             
             if (!this.room) {
                 throw new Error('Failed to create or join room - room is null');
             }
             
             console.log('Successfully connected and joined room:', {
+                username: this.username,
                 sessionId: this.room.sessionId,
                 roomId: this.room.id,
                 roomName: this.room.name
@@ -207,12 +256,11 @@ export class DuelScene extends Phaser.Scene {
                 wsUrl: process.env.NEXT_PUBLIC_WS_URL,
                 origin: window.location.origin,
                 protocol: window.location.protocol,
-                error: error // Log the full error object
+                error: error
             });
 
             this.statusText?.setText('Connection failed! Retrying...');
             
-            // Retry logic with exponential backoff
             if (retryCount < 3) {
                 const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
                 console.log(`Retrying connection (${retryCount + 1}/3) after ${delay}ms...`);
