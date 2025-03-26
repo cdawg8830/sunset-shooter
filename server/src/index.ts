@@ -16,16 +16,7 @@ app.use((req, res, next) => {
 });
 
 // Basic CORS middleware
-const corsMiddleware = cors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-    credentials: true
-});
-
-// Apply CORS middleware
-app.use(corsMiddleware);
+app.use(cors());
 
 // Basic health check endpoint
 app.get('/', (req, res) => {
@@ -38,42 +29,22 @@ app.get('/', (req, res) => {
     });
 });
 
-// Create HTTP server
-const server = createServer((req, res) => {
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Request-Method', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST');
-        res.setHeader('Access-Control-Allow-Headers', '*');
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-        res.writeHead(204);
-        res.end();
-        return;
-    }
-
-    // Forward other requests to Express
-    app(req, res);
-});
-
-// Handle WebSocket upgrade
-server.on('upgrade', (request, socket, head) => {
-    if (request.headers.origin) {
-        // Allow WebSocket upgrade from any origin
-        socket.write('HTTP/1.1 101 Switching Protocols\r\n' +
-                    'Upgrade: websocket\r\n' +
-                    'Connection: Upgrade\r\n' +
-                    'Access-Control-Allow-Origin: *\r\n' +
-                    'Access-Control-Allow-Credentials: true\r\n' +
-                    '\r\n');
-    }
-});
+const server = createServer(app);
 
 const gameServer = new Server({
     transport: new WebSocketTransport({
         server,
         pingInterval: 5000,
-        pingMaxRetries: 3
+        pingMaxRetries: 3,
+        // @ts-ignore - These options are supported by ws but not typed in Colyseus
+        verifyClient: (info: any, callback: any) => {
+            // Accept all WebSocket connections
+            callback(true);
+        },
+        handleProtocols: (protocols: string[], request: any) => {
+            // Accept any protocol
+            return protocols[0];
+        }
     })
 });
 
