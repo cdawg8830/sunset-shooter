@@ -15,19 +15,42 @@ app.use((req, res, next) => {
     next();
 });
 
+// Define allowed origins
+const allowedOrigins = [
+    'https://www.sunsetshooter.com',
+    'https://sunsetshooter.com',
+    'http://localhost:3000'
+];
+
 // CORS middleware with explicit configuration
 app.use(cors({
-    origin: true, // Allow all origins
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, origin);
+        } else {
+            console.log('Origin not allowed:', origin);
+            callback(null, allowedOrigins[0]); // Default to main domain
+        }
+    },
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'Connection', 'Upgrade', 'Sec-WebSocket-Key', 'Sec-WebSocket-Version'],
-    credentials: false
+    credentials: true
 }));
 
 // Handle WebSocket upgrade requests
 app.use((req, res, next) => {
+    const origin = req.headers.origin;
     if (req.headers.upgrade === 'websocket') {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Credentials', 'false');
+        // Set CORS headers for WebSocket upgrade
+        if (origin && allowedOrigins.includes(origin)) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+        } else {
+            res.setHeader('Access-Control-Allow-Origin', allowedOrigins[0]);
+        }
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
     next();
 });
@@ -39,7 +62,8 @@ app.get('/', (req, res) => {
         status: 'ok',
         message: 'Sunset Shooter Game Server',
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
+        allowedOrigins
     });
 });
 
@@ -63,7 +87,10 @@ gameServer.listen(port).then(() => {
     console.log('Server configuration:', {
         port,
         environment: process.env.NODE_ENV || 'development',
-        cors: 'enabled with all origins'
+        cors: {
+            enabled: true,
+            allowedOrigins
+        }
     });
 }).catch((err) => {
     console.error(err);
