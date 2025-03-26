@@ -165,18 +165,12 @@ export class DuelScene extends Phaser.Scene {
     private async connectToServer(retryCount = 0) {
         try {
             console.log('Attempting to connect to server...');
-            let wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:2567';
-            
-            // Ensure we're using wss:// for production
-            if (wsUrl.startsWith('https://')) {
-                wsUrl = wsUrl.replace('https://', 'wss://');
-            } else if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
-                wsUrl = `wss://${wsUrl}`;
-            }
+            // Use the Railway URL directly - Colyseus will handle the protocol conversion
+            const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:2567';
             
             console.log('Environment:', {
                 NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL,
-                finalWsUrl: wsUrl,
+                wsUrl: wsUrl,
                 origin: window.location.origin
             });
             
