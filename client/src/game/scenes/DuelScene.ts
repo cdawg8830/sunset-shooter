@@ -174,19 +174,17 @@ export class DuelScene extends Phaser.Scene {
                 wsUrl = `wss://${wsUrl}`;
             }
             
+            console.log('Environment:', {
+                NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL,
+                finalWsUrl: wsUrl,
+                origin: window.location.origin
+            });
+            
             console.log('Connecting to WebSocket server at:', wsUrl);
             this.client = new Client(wsUrl);
             
-            // Add connection timeout
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('Connection timeout')), 5000);
-            });
-            
-            // Try to join room with timeout
-            this.room = await Promise.race([
-                this.client.joinOrCreate('duel'),
-                timeoutPromise
-            ]) as Room;
+            console.log('Attempting to join room...');
+            this.room = await this.client.joinOrCreate('duel');
             
             if (!this.room) {
                 throw new Error('Failed to create or join room');
@@ -195,8 +193,13 @@ export class DuelScene extends Phaser.Scene {
             console.log('Connected to server successfully');
             this.setupRoomHandlers();
             
-        } catch (error) {
+        } catch (error: any) {
             console.error("Could not connect to server:", error);
+            console.error("Error details:", {
+                name: error?.name,
+                message: error?.message,
+                stack: error?.stack
+            });
             this.statusText?.setText('Connection failed! Retrying...');
             
             // Retry logic
