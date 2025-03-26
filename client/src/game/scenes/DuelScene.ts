@@ -42,83 +42,109 @@ export class DuelScene extends Phaser.Scene {
     }
 
     create() {
-        // Make game responsive
-        this.scale.on('resize', this.handleResize, this);
-        this.currentWidth = window.innerWidth;
-        this.currentHeight = window.innerHeight;
-        this.handleResize();
-
-        // Detect if we're on mobile and adjust accordingly
-        this.adjustForMobile();
-
-        // Create background elements
-        this.createBackground();
-
-        // Attempt to unlock audio on mobile
-        this.unlockAudio();
-
-        // Create pixel art style text
-        const textConfig = {
-            fontSize: '16px',
-            fontFamily: 'monospace',
-            color: '#ffffff',
-            stroke: '#000000',
-            strokeThickness: 4
-        };
-
-        // Add status text
-        this.statusText = this.add.text(
-            this.scale.width / 2, 
-            this.registry.get('isMobile') ? 20 : 30, 
-            'Enter your username to start', 
-            { ...textConfig, fontSize: this.registry.get('isMobile') ? '18px' : '24px' }
-        ).setOrigin(0.5);
-
-        // Add score text
-        this.scoreText = this.add.text(
-            this.registry.get('isMobile') ? this.scale.width / 2 : 10,
-            this.registry.get('isMobile') ? 50 : 10,
-            '',
-            textConfig
-        );
-
-        // Add stats text
-        this.statsText = this.add.text(
-            this.registry.get('isMobile') ? this.scale.width / 2 : 10,
-            this.registry.get('isMobile') ? 80 : 40,
-            '',
-            textConfig
-        );
-
-        // Add countdown text
-        this.countdownText = this.add.text(
-            this.scale.width / 2,
-            this.scale.height / 2,
-            '',
-            { ...textConfig, fontSize: this.registry.get('isMobile') ? '36px' : '48px' }
-        ).setOrigin(0.5);
-
-        // Create opponent placeholder
-        this.createOpponent();
-
-        // Create gun placeholder
-        this.createGun();
-
-        // Create buttons (initially hidden)
-        this.createButtons();
-        this.readyButton?.setVisible(false);
-
-        // Create username input first, before any connection attempts
-        this.createUsernameInput();
-
-        // Add mobile touch controls
-        this.input.on('pointerdown', () => {
-            if (this.room?.state.gamePhase === 'draw' && !this.hasShot) {
-                this.handleShoot();
-            } else if (this.room?.state.gamePhase === 'waiting' && this.readyButton?.visible) {
-                this.handleReady();
-            }
-        });
+        console.log('Create method started');
+        
+        try {
+            // Make game responsive
+            this.scale.on('resize', this.handleResize, this);
+            this.currentWidth = window.innerWidth;
+            this.currentHeight = window.innerHeight;
+            this.handleResize();
+    
+            // Detect if we're on mobile and adjust accordingly
+            this.adjustForMobile();
+    
+            // Create background elements
+            console.log('Creating background');
+            this.createBackground();
+    
+            // Attempt to unlock audio on mobile
+            console.log('Unlocking audio');
+            this.unlockAudio();
+    
+            // Create pixel art style text
+            const textConfig = {
+                fontSize: '16px',
+                fontFamily: 'monospace',
+                color: '#ffffff',
+                stroke: '#000000',
+                strokeThickness: 4
+            };
+    
+            console.log('Creating UI elements');
+            // Add status text
+            this.statusText = this.add.text(
+                this.scale.width / 2, 
+                this.registry.get('isMobile') ? 20 : 30, 
+                'Enter your username to start', 
+                { ...textConfig, fontSize: this.registry.get('isMobile') ? '18px' : '24px' }
+            ).setOrigin(0.5);
+    
+            // Add score text
+            this.scoreText = this.add.text(
+                this.registry.get('isMobile') ? this.scale.width / 2 : 10,
+                this.registry.get('isMobile') ? 50 : 10,
+                '',
+                textConfig
+            );
+    
+            // Add stats text
+            this.statsText = this.add.text(
+                this.registry.get('isMobile') ? this.scale.width / 2 : 10,
+                this.registry.get('isMobile') ? 80 : 40,
+                '',
+                textConfig
+            );
+    
+            // Add countdown text
+            this.countdownText = this.add.text(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                '',
+                { ...textConfig, fontSize: this.registry.get('isMobile') ? '36px' : '48px' }
+            ).setOrigin(0.5);
+    
+            console.log('Creating game elements');
+            // Create opponent placeholder
+            this.createOpponent();
+    
+            // Create gun placeholder
+            this.createGun();
+    
+            // Create buttons (initially hidden)
+            this.createButtons();
+            this.readyButton?.setVisible(false);
+    
+            // Create username input first, before any connection attempts
+            this.createUsernameInput();
+    
+            // Add mobile touch controls
+            this.input.on('pointerdown', () => {
+                if (this.room?.state.gamePhase === 'draw' && !this.hasShot) {
+                    this.handleShoot();
+                } else if (this.room?.state.gamePhase === 'waiting' && this.readyButton?.visible) {
+                    this.handleReady();
+                }
+            });
+            
+            console.log('Create method completed successfully');
+        } catch (error) {
+            console.error('Error in create method:', error);
+            // Display error to user
+            this.add.text(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                `Error loading game: ${error}\nPlease refresh the page.`,
+                {
+                    fontSize: '16px',
+                    fontFamily: 'monospace',
+                    color: '#ff0000',
+                    stroke: '#000000',
+                    strokeThickness: 2,
+                    align: 'center'
+                }
+            ).setOrigin(0.5);
+        }
     }
 
     private handleResize() {
@@ -296,30 +322,89 @@ export class DuelScene extends Phaser.Scene {
     }
 
     private createBackground() {
-        // Add the background image
-        const background = this.add.image(this.scale.width / 2, this.scale.height / 2, 'background');
-        
-        // Scale to fit our game width while maintaining aspect ratio
-        const scaleX = this.scale.width / background.width;
-        const scaleY = this.scale.height / background.height;
-        const scale = Math.max(scaleX, scaleY); // Use max to ensure it covers the screen
-        background.setScale(scale);
-        
-        // Ensure the background is behind everything else
-        background.setDepth(-1);
+        try {
+            console.log('Starting background creation');
+            
+            // Check if background texture exists before creating the image
+            if (this.textures.exists('background')) {
+                console.log('Using loaded background texture');
+                // Add the background image
+                const background = this.add.image(this.scale.width / 2, this.scale.height / 2, 'background');
+                
+                // Scale to fit our game width while maintaining aspect ratio
+                const scaleX = this.scale.width / background.width;
+                const scaleY = this.scale.height / background.height;
+                const scale = Math.max(scaleX, scaleY); // Use max to ensure it covers the screen
+                background.setScale(scale);
+                
+                // Ensure the background is behind everything else
+                background.setDepth(-1);
+            } else {
+                console.warn('Background texture not found, creating fallback');
+                // Create a fallback gradient background if the texture isn't available
+                this.createEmergencyBackground();
+                const background = this.add.image(this.scale.width / 2, this.scale.height / 2, 'background');
+                
+                // Scale to fit our game width while maintaining aspect ratio
+                const scaleX = this.scale.width / background.width;
+                const scaleY = this.scale.height / background.height;
+                const scale = Math.max(scaleX, scaleY);
+                background.setScale(scale);
+                background.setDepth(-1);
+            }
+            
+            console.log('Background creation complete');
+        } catch (error) {
+            console.error('Error creating background:', error);
+            // Create a simple solid color background as a last resort
+            const fallbackBg = this.add.rectangle(
+                this.scale.width / 2, 
+                this.scale.height / 2,
+                this.scale.width,
+                this.scale.height,
+                0x000022
+            );
+            fallbackBg.setDepth(-1);
+        }
     }
 
     private createOpponent() {
-        // Create the opponent container
-        this.opponent = this.add.container(this.scale.width / 2, this.scale.height / 2 + 20);
-        
-        // Add the opponent sprite
-        const opponentSprite = this.add.sprite(0, 0, 'opponent');
-        opponentSprite.setOrigin(0.5, 0.5);
-        
-        if (this.opponent) {
-            this.opponent.add(opponentSprite);
-            this.opponent.setScale(0.3); // Much smaller initial scale
+        try {
+            console.log('Creating opponent');
+            
+            // Create the opponent container
+            this.opponent = this.add.container(this.scale.width / 2, this.scale.height / 2 + 20);
+            
+            // Check if opponent texture exists
+            if (this.textures.exists('opponent')) {
+                // Add the opponent sprite
+                const opponentSprite = this.add.sprite(0, 0, 'opponent');
+                opponentSprite.setOrigin(0.5, 0.5);
+                
+                if (this.opponent) {
+                    this.opponent.add(opponentSprite);
+                    this.opponent.setScale(0.3); // Much smaller initial scale
+                }
+            } else {
+                console.warn('Opponent texture not found, creating fallback');
+                this.createEmergencyOpponent();
+                const opponentSprite = this.add.sprite(0, 0, 'opponent');
+                opponentSprite.setOrigin(0.5, 0.5);
+                
+                if (this.opponent) {
+                    this.opponent.add(opponentSprite);
+                    this.opponent.setScale(0.3);
+                }
+            }
+            
+            console.log('Opponent creation complete');
+        } catch (error) {
+            console.error('Error creating opponent:', error);
+            // Create a minimal opponent as last resort
+            this.opponent = this.add.container(this.scale.width / 2, this.scale.height / 2 + 20);
+            const fallbackOpponent = this.add.rectangle(0, 0, 60, 120, 0x333333);
+            this.opponent.add(fallbackOpponent);
+            this.opponent.setScale(0.3);
         }
     }
 
@@ -340,20 +425,48 @@ export class DuelScene extends Phaser.Scene {
     }
 
     private createGun() {
-        // Create a container for the gun
-        this.gunContainer = this.add.container(this.scale.width / 2, this.scale.height - 150);
-        
-        // Create muzzle flash
-        this.createMuzzleFlash();
-        
-        // Add the gun sprite
-        const gun = this.add.sprite(0, 0, 'revolver');
-        gun.setOrigin(0.5, 0.5);
-        gun.setScale(0.8);
-        
-        if (this.gunContainer && this.muzzleFlash) {
-            this.gunContainer.add([gun]);
-            this.gunContainer.add(this.muzzleFlash);
+        try {
+            console.log('Creating gun');
+            
+            // Create a container for the gun
+            this.gunContainer = this.add.container(this.scale.width / 2, this.scale.height - 150);
+            
+            // Create muzzle flash
+            this.createMuzzleFlash();
+            
+            // Check if revolver texture exists
+            if (this.textures.exists('revolver')) {
+                // Add the gun sprite
+                const gun = this.add.sprite(0, 0, 'revolver');
+                gun.setOrigin(0.5, 0.5);
+                gun.setScale(0.8);
+                
+                if (this.gunContainer && this.muzzleFlash) {
+                    this.gunContainer.add([gun]);
+                    this.gunContainer.add(this.muzzleFlash);
+                    this.gunContainer.setRotation(-0.2);
+                }
+            } else {
+                console.warn('Revolver texture not found, creating fallback');
+                this.createEmergencyRevolver();
+                const gun = this.add.sprite(0, 0, 'revolver');
+                gun.setOrigin(0.5, 0.5);
+                gun.setScale(0.8);
+                
+                if (this.gunContainer && this.muzzleFlash) {
+                    this.gunContainer.add([gun]);
+                    this.gunContainer.add(this.muzzleFlash);
+                    this.gunContainer.setRotation(-0.2);
+                }
+            }
+            
+            console.log('Gun creation complete');
+        } catch (error) {
+            console.error('Error creating gun:', error);
+            // Create a minimal gun as last resort
+            this.gunContainer = this.add.container(this.scale.width / 2, this.scale.height - 150);
+            const fallbackGun = this.add.rectangle(0, 0, 80, 30, 0x666666);
+            this.gunContainer.add(fallbackGun);
             this.gunContainer.setRotation(-0.2);
         }
     }
@@ -398,78 +511,151 @@ export class DuelScene extends Phaser.Scene {
     }
 
     private createUsernameInput() {
-        // Create HTML input element
-        this.usernameInput = document.createElement('input');
-        this.usernameInput.type = 'text';
-        this.usernameInput.placeholder = 'Enter username';
-        this.usernameInput.style.position = 'absolute';
-        this.usernameInput.style.left = '50%';
-        this.usernameInput.style.top = '100px';
-        this.usernameInput.style.transform = 'translateX(-50%)';
-        this.usernameInput.style.padding = '8px';
-        this.usernameInput.style.border = '2px solid #fff';
-        this.usernameInput.style.borderRadius = '4px';
-        this.usernameInput.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        this.usernameInput.style.color = '#fff';
-        this.usernameInput.style.textAlign = 'center';
-        this.usernameInput.style.fontSize = '16px';
-        this.usernameInput.style.width = '200px'; // Fixed width for better mobile display
-        
-        // Make input more mobile-friendly
-        if (this.registry.get('isMobile')) {
-            this.usernameInput.style.fontSize = '18px'; // Larger text for mobile
-            this.usernameInput.style.padding = '12px 8px'; // Larger touch target
-        }
-        
-        // Create submit button
-        const submitButton = document.createElement('button');
-        submitButton.textContent = 'Join Game';
-        submitButton.style.position = 'absolute';
-        submitButton.style.left = '50%';
-        submitButton.style.top = '150px';
-        submitButton.style.transform = 'translateX(-50%)';
-        submitButton.style.padding = '8px 16px';
-        submitButton.style.border = '2px solid #fff';
-        submitButton.style.borderRadius = '4px';
-        submitButton.style.backgroundColor = '#4CAF50';
-        submitButton.style.color = '#fff';
-        submitButton.style.cursor = 'pointer';
-        submitButton.style.fontSize = '16px';
-        submitButton.style.width = '200px'; // Match input width
-        
-        // Make button more mobile-friendly
-        if (this.registry.get('isMobile')) {
-            submitButton.style.fontSize = '18px'; // Larger text for mobile
-            submitButton.style.padding = '12px 16px'; // Larger touch target
-            submitButton.style.top = '170px'; // Move down a bit more
-        }
-
-        // Add elements to DOM
-        document.body.appendChild(this.usernameInput);
-        document.body.appendChild(submitButton);
-
-        // Handle submit
-        const handleSubmit = () => {
-            const username = this.usernameInput?.value.trim();
-            if (username && username.length >= 2) {
-                this.username = username;
-                localStorage.setItem('username', username);
-                this.usernameInput?.remove();
-                submitButton.remove();
+        try {
+            console.log('Creating username input');
+            
+            // Check if we already have a stored username
+            const savedUsername = localStorage.getItem('username');
+            if (savedUsername && savedUsername.length >= 2) {
+                console.log('Using saved username:', savedUsername);
+                this.username = savedUsername;
+                // Skip input creation and connect directly
                 this.connectToServer();
-                this.statusText?.setText('Connecting...');
-            } else {
-                this.statusText?.setText('Username must be at least 2 characters');
+                if (this.statusText) {
+                    this.statusText.setText('Connecting...');
+                }
+                return;
             }
-        };
+            
+            // Create HTML input element
+            this.usernameInput = document.createElement('input');
+            this.usernameInput.type = 'text';
+            this.usernameInput.placeholder = 'Enter username';
+            this.usernameInput.style.position = 'absolute';
+            this.usernameInput.style.left = '50%';
+            this.usernameInput.style.top = '100px';
+            this.usernameInput.style.transform = 'translateX(-50%)';
+            this.usernameInput.style.padding = '8px';
+            this.usernameInput.style.border = '2px solid #fff';
+            this.usernameInput.style.borderRadius = '4px';
+            this.usernameInput.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            this.usernameInput.style.color = '#fff';
+            this.usernameInput.style.textAlign = 'center';
+            this.usernameInput.style.fontSize = '16px';
+            this.usernameInput.style.width = '200px'; // Fixed width for better mobile display
+            
+            // Make input more mobile-friendly
+            if (this.registry.get('isMobile')) {
+                this.usernameInput.style.fontSize = '18px'; // Larger text for mobile
+                this.usernameInput.style.padding = '12px 8px'; // Larger touch target
+            }
+            
+            // Create submit button
+            const submitButton = document.createElement('button');
+            submitButton.textContent = 'Join Game';
+            submitButton.style.position = 'absolute';
+            submitButton.style.left = '50%';
+            submitButton.style.top = '150px';
+            submitButton.style.transform = 'translateX(-50%)';
+            submitButton.style.padding = '8px 16px';
+            submitButton.style.border = '2px solid #fff';
+            submitButton.style.borderRadius = '4px';
+            submitButton.style.backgroundColor = '#4CAF50';
+            submitButton.style.color = '#fff';
+            submitButton.style.cursor = 'pointer';
+            submitButton.style.fontSize = '16px';
+            submitButton.style.width = '200px'; // Match input width
+            
+            // Make button more mobile-friendly
+            if (this.registry.get('isMobile')) {
+                submitButton.style.fontSize = '18px'; // Larger text for mobile
+                submitButton.style.padding = '12px 16px'; // Larger touch target
+                submitButton.style.top = '170px'; // Move down a bit more
+            }
 
-        // Add submit handlers
-        submitButton.onclick = handleSubmit;
-        this.usernameInput.onkeypress = (e) => {
-            if (e.key === 'Enter') {
-                handleSubmit();
+            // Add elements to DOM
+            document.body.appendChild(this.usernameInput);
+            document.body.appendChild(submitButton);
+
+            // Handle submit
+            const handleSubmit = () => {
+                const username = this.usernameInput?.value.trim();
+                if (username && username.length >= 2) {
+                    this.username = username;
+                    localStorage.setItem('username', username);
+                    this.usernameInput?.remove();
+                    submitButton.remove();
+                    this.connectToServer();
+                    this.statusText?.setText('Connecting...');
+                } else {
+                    this.statusText?.setText('Username must be at least 2 characters');
+                }
+            };
+
+            // Add submit handlers
+            submitButton.onclick = handleSubmit;
+            this.usernameInput.onkeypress = (e) => {
+                if (e.key === 'Enter') {
+                    handleSubmit();
+                }
+            };
+            
+            // Add emergency continue button that appears after 5 seconds
+            setTimeout(() => {
+                if (document.body.contains(submitButton)) {
+                    const emergencyButton = document.createElement('button');
+                    emergencyButton.textContent = '⚠️ Having trouble? Click here to continue';
+                    emergencyButton.style.position = 'absolute';
+                    emergencyButton.style.left = '50%';
+                    emergencyButton.style.top = '220px';
+                    emergencyButton.style.transform = 'translateX(-50%)';
+                    emergencyButton.style.padding = '8px 16px';
+                    emergencyButton.style.border = '2px solid #ff9900';
+                    emergencyButton.style.borderRadius = '4px';
+                    emergencyButton.style.backgroundColor = '#333333';
+                    emergencyButton.style.color = '#ff9900';
+                    emergencyButton.style.cursor = 'pointer';
+                    emergencyButton.style.fontSize = '14px';
+                    emergencyButton.style.width = '280px';
+                    
+                    document.body.appendChild(emergencyButton);
+                    
+                    emergencyButton.onclick = () => {
+                        // Use a default username
+                        this.username = 'Guest' + Math.floor(Math.random() * 1000);
+                        localStorage.setItem('username', this.username);
+                        
+                        // Remove all UI elements
+                        this.usernameInput?.remove();
+                        submitButton.remove();
+                        emergencyButton.remove();
+                        
+                        // Connect to server
+                        this.connectToServer();
+                        this.statusText?.setText('Connecting as ' + this.username + '...');
+                    };
+                }
+            }, 5000);
+            
+            console.log('Username input creation complete');
+        } catch (error) {
+            console.error('Error creating username input:', error);
+            
+            // Fallback in case of error
+            this.username = 'Guest' + Math.floor(Math.random() * 1000);
+            localStorage.setItem('username', this.username);
+            
+            // Try to clean up any existing elements
+            if (this.usernameInput) {
+                this.usernameInput.remove();
             }
-        };
+            
+            // Connect directly
+            this.connectToServer();
+            if (this.statusText) {
+                this.statusText.setText('Connecting as ' + this.username + '...');
+            }
+        }
     }
 
     private async connectToServer(retryCount = 0) {
@@ -759,40 +945,41 @@ export class DuelScene extends Phaser.Scene {
     }
 
     private animateOpponentShoot() {
-        // More dramatic opponent shooting animation
-        this.tweens.add({
-            targets: this.opponent,
-            scaleX: 0.55,
-            scaleY: 0.55,
-            y: '-=15',
-            duration: 120,
-            yoyo: true,
-            ease: 'Power3'
-        });
-        
-        // Add a recoil effect
-        this.tweens.add({
-            targets: this.opponent,
-            rotation: 0.15,
-            duration: 80,
-            yoyo: true,
-            ease: 'Power2'
-        });
-        
-        // Screen shake when opponent shoots
-        this.cameras.main.shake(200, 0.008);
-        
-        // Play opponent gunshot sound with more robust error handling
         try {
-            // Create a new instance of the sound each time to avoid issues
-            const gunshot = this.sound.add('gunshot', { volume: 0.6, detune: 200 });
+            // Try to play gunshot sound for opponent
+            const gunshot = this.sound.add('gunshot', { volume: 0.5 });
             gunshot.play();
-            // Clean up after playing
             gunshot.once('complete', () => {
                 gunshot.destroy();
             });
         } catch (error) {
-            console.error('Failed to play opponent gunshot sound:', error);
+            console.error("Error playing opponent gunshot sound:", error);
+        }
+        
+        // Create muzzle flash with graphics
+        if (this.opponent) {
+            const flashX = this.opponent.x - 60; // Position based on opponent sprite
+            const flashY = this.opponent.y - 10;
+            
+            const flash = this.add.graphics();
+            flash.fillStyle(0xFFFF00, 0.8);
+            flash.fillCircle(0, 0, 20);
+            flash.fillStyle(0xFFFFFF, 0.9);
+            flash.fillCircle(0, 0, 10);
+            flash.x = flashX;
+            flash.y = flashY;
+            
+            // Animate muzzle flash
+            this.tweens.add({
+                targets: flash,
+                scaleX: 0.5,
+                scaleY: 0.5,
+                alpha: 0,
+                duration: 100,
+                onComplete: () => {
+                    flash.destroy();
+                }
+            });
         }
     }
 
@@ -1056,16 +1243,19 @@ export class DuelScene extends Phaser.Scene {
     private unlockAudio() {
         // On mobile devices, audio playback must be triggered by user interaction
         const unlockAudio = () => {
-            // Create a short silent sound for unlocking audio
-            const silence = this.sound.add('silence');
-            silence.play({ volume: 0.1 });
-            silence.once('complete', () => {
-                silence.destroy();
-            });
-
-            // Try to play background music now
-            if (!this.sound.get('western') || !this.sound.get('western').isPlaying) {
-                this.sound.play('western', { volume: 0.3, loop: true });
+            try {
+                // Try to play background music now without using silence
+                if (!this.sound.get('western') || !this.sound.get('western').isPlaying) {
+                    this.sound.play('western', { volume: 0.3, loop: true });
+                }
+                
+                // Try to resume audio context directly
+                const soundManager = this.game.sound;
+                if ('context' in soundManager && soundManager.context.state === 'suspended') {
+                    soundManager.context.resume();
+                }
+            } catch (e) {
+                console.error('Failed to unlock audio:', e);
             }
 
             // Remove event listeners after we've unlocked audio
@@ -1083,10 +1273,121 @@ export class DuelScene extends Phaser.Scene {
     }
 
     preload() {
+        console.log('Preload started');
+        
+        // Add a loading text to show progress
+        const loadingText = this.add.text(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            'Loading game assets...',
+            {
+                fontSize: '18px',
+                fontFamily: 'monospace',
+                color: '#ffffff',
+                stroke: '#000000',
+                strokeThickness: 2
+            }
+        ).setOrigin(0.5);
+        
+        // Add loading progress bar
+        const progressBar = this.add.graphics();
+        const progressBox = this.add.graphics();
+        progressBox.fillStyle(0x222222, 0.8);
+        progressBox.fillRect(this.scale.width / 2 - 160, this.scale.height / 2 + 30, 320, 30);
+        
+        // Register load progress event
+        this.load.on('progress', (value: number) => {
+            console.log(`Loading progress: ${Math.round(value * 100)}%`);
+            progressBar.clear();
+            progressBar.fillStyle(0xffffff, 1);
+            progressBar.fillRect(this.scale.width / 2 - 150, this.scale.height / 2 + 40, 300 * value, 10);
+        });
+        
+        // Complete event
+        this.load.on('complete', () => {
+            console.log('Loading complete, moving to create method');
+            progressBar.destroy();
+            progressBox.destroy();
+            loadingText.destroy();
+        });
+        
         // Load audio files
         this.load.audio('western', 'assets/western-theme.mp3');
         this.load.audio('gunshot', 'assets/gunshot.mp3');
-        // Create a short silent sound for unlocking audio
-        this.load.audio('silence', 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADQgBJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJ//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAYAAAAAAAAAQx/3bxsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/7kGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEluZm8AAAAPAAAAAwAABPAANjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2VlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWf39/f39/f39/f39/f39/f39/f39/f39/fz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/P8DAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwP////////////////////////////////8AAAAATGF2YzU4LjEwAAAAAAAAAAAAAAAAJAcAAAAAAAAABOipO5QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEluZm8AAAAPAAAAAgAAA4QAVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqv///////////////////////////////////////////////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEwAAAAAAAAAAAAAAAAJAAAAAAAAAAA4G4g9XQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/w==');
+        
+        // Load images
+        this.load.image('revolver', 'assets/revolver.png');
+        this.load.image('opponent', 'assets/opponent.png');
+        this.load.image('background', 'assets/background.png');
+        
+        // Set a fallback handler for missing assets
+        this.load.on('loaderror', (fileObj: { key: string }) => {
+            console.warn('Error loading asset:', fileObj.key);
+            
+            // Create emergency backup assets for essential items
+            if (fileObj.key === 'background') {
+                this.createEmergencyBackground();
+            } else if (fileObj.key === 'opponent') {
+                this.createEmergencyOpponent();
+            } else if (fileObj.key === 'revolver') {
+                this.createEmergencyRevolver();
+            } else if (fileObj.key === 'western') {
+                console.warn('Failed to load western theme, game will continue without music');
+            } else if (fileObj.key === 'gunshot') {
+                console.warn('Failed to load gunshot sound, game will continue without sound effect');
+            }
+        });
+    }
+    
+    // Create simple backup assets if loading fails
+    private createEmergencyBackground() {
+        const graphics = this.add.graphics();
+        graphics.fillGradientStyle(0x000022, 0x000022, 0xff5500, 0xff5500, 1);
+        graphics.fillRect(0, 0, 800, 600);
+        graphics.generateTexture('background', 800, 600);
+        graphics.destroy();
+    }
+    
+    private createEmergencyOpponent() {
+        const graphics = this.add.graphics();
+        // Draw a simple cowboy silhouette
+        graphics.fillStyle(0x000000);
+        graphics.fillRect(-50, -100, 100, 200);
+        graphics.fillStyle(0x333333);
+        graphics.fillRect(-30, -130, 60, 30);
+        graphics.generateTexture('opponent', 100, 200);
+        graphics.destroy();
+    }
+    
+    private createEmergencyRevolver() {
+        const graphics = this.add.graphics();
+        // Draw a simple gun shape
+        graphics.fillStyle(0x333333);
+        graphics.fillRect(-40, -10, 80, 20);
+        graphics.fillRect(-40, -20, 20, 40);
+        graphics.generateTexture('revolver', 80, 40);
+        graphics.destroy();
+    }
+
+    init() {
+        console.log('Scene initialization started');
+        
+        // Create default textures in case loading fails
+        try {
+            // Set the default registry values early
+            this.registry.set('isMobile', false);
+            this.registry.set('isPortrait', false);
+            
+            // Initialize game state variables
+            this.hasShot = false;
+            this.buildings = [];
+            this.username = localStorage.getItem('username') || '';
+            this.currentWidth = window.innerWidth;
+            this.currentHeight = window.innerHeight;
+            
+            console.log('Scene initialization complete');
+        } catch (error) {
+            console.error('Error in init method:', error);
+        }
     }
 } 
