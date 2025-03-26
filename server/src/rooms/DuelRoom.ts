@@ -10,7 +10,32 @@ interface LeaderboardEntry {
     totalGames: number;
     fastestReaction: number;
     lastPlayed: string; // ISO date string
+    isAI?: boolean;
 }
+
+// AI player names for the fake leaderboard
+const AI_PLAYER_NAMES = [
+    "Quickdraw McGraw",
+    "DeadEye Bill",
+    "Fast Hand Luke",
+    "Wild Wes",
+    "Texas Ranger",
+    "Doc Holliday",
+    "Sundance Kid",
+    "Annie Oakley",
+    "Calamity Jane",
+    "Billy the Kid",
+    "Jesse James",
+    "Wyatt Earp",
+    "Black Bart",
+    "Butch Cassidy",
+    "Buffalo Bill",
+    "Kit Carson",
+    "Shotgun Sally",
+    "Trigger Tom",
+    "Pistol Pete",
+    "Six-shooter Sam"
+];
 
 export class DuelRoom extends Room<DuelState> {
     private leaderboard: LeaderboardEntry[] = [];
@@ -169,20 +194,27 @@ export class DuelRoom extends Room<DuelState> {
         }, 3000);
     }
 
-    // Load leaderboard data from file
+    // Load leaderboard data from file or create dummy data if needed
     private loadLeaderboard() {
         try {
             if (fs.existsSync(this.leaderboardPath)) {
                 const data = fs.readFileSync(this.leaderboardPath, 'utf8');
                 this.leaderboard = JSON.parse(data);
                 console.log('Leaderboard loaded, entries:', this.leaderboard.length);
+                
+                // Add more AI players if there aren't enough entries
+                if (this.leaderboard.length < 10) {
+                    this.addAIPlayersToLeaderboard();
+                }
             } else {
-                console.log('No leaderboard file found, starting fresh');
+                console.log('No leaderboard file found, creating dummy data');
                 this.leaderboard = [];
+                this.addAIPlayersToLeaderboard();
             }
         } catch (error) {
             console.error('Error loading leaderboard:', error);
             this.leaderboard = [];
+            this.addAIPlayersToLeaderboard();
         }
     }
     
@@ -222,18 +254,72 @@ export class DuelRoom extends Room<DuelState> {
         return entry;
     }
     
-    // Update player stats in the leaderboard
+    // Add AI players to the leaderboard to make it look populated
+    private addAIPlayersToLeaderboard() {
+        // Shuffle the AI names array to get random names
+        const shuffledNames = [...AI_PLAYER_NAMES].sort(() => Math.random() - 0.5);
+        
+        // Add AI players with varying stats
+        for (let i = 0; i < 20 && this.leaderboard.length < 20; i++) {
+            const name = shuffledNames[i];
+            
+            // Check if this name already exists
+            if (this.leaderboard.some(entry => entry.username === name)) {
+                continue;
+            }
+            
+            // Create AI player with reasonable stats
+            const aiPlayer: LeaderboardEntry = {
+                username: name,
+                wins: Math.floor(Math.random() * 30) + 5, // 5-35 wins
+                totalGames: Math.floor(Math.random() * 50) + 15, // 15-65 games
+                fastestReaction: Math.floor(Math.random() * 400) + 200, // 200-600ms reaction time
+                lastPlayed: new Date().toISOString(),
+                isAI: true
+            };
+            
+            // Ensure wins <= totalGames
+            if (aiPlayer.wins > aiPlayer.totalGames) {
+                aiPlayer.totalGames = aiPlayer.wins + Math.floor(Math.random() * 10);
+            }
+            
+            this.leaderboard.push(aiPlayer);
+        }
+        
+        // Save the updated leaderboard
+        this.saveLeaderboard();
+    }
+    
+    // Update player stats in the leaderboard with additional details for better realism
     private updateLeaderboardStats(username: string, didWin: boolean, reactionTime: number) {
         const entry = this.findOrCreateLeaderboardEntry(username);
         
+        // Update stats
         entry.totalGames++;
         if (didWin) entry.wins++;
+        
+        // Only update fastest reaction time if it's a legitimate time and better than current
         if (reactionTime > 0 && reactionTime < entry.fastestReaction) {
             entry.fastestReaction = reactionTime;
         }
+        
         entry.lastPlayed = new Date().toISOString();
         
+        // Make sure this is marked as a real player, not AI
+        if (entry.isAI !== undefined) {
+            delete entry.isAI;
+        }
+        
+        // Save the updated leaderboard
         this.saveLeaderboard();
+        
+        // Also update in-memory state for the player
+        const player = this.state.players.get(username);
+        if (player) {
+            player.wins = entry.wins;
+            player.totalGames = entry.totalGames;
+            player.fastestReaction = entry.fastestReaction;
+        }
     }
 
     // Match players based on skill level

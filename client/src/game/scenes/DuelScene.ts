@@ -54,6 +54,9 @@ export class DuelScene extends Phaser.Scene {
         // Create background elements
         this.createBackground();
 
+        // Attempt to unlock audio on mobile
+        this.unlockAudio();
+
         // Create pixel art style text
         const textConfig = {
             fontSize: '16px',
@@ -116,11 +119,6 @@ export class DuelScene extends Phaser.Scene {
                 this.handleReady();
             }
         });
-
-        // Play background music if not already playing
-        if (!this.sound.get('western') || !this.sound.get('western').isPlaying) {
-            this.sound.play('western', { volume: 0.3, loop: true });
-        }
     }
 
     private handleResize() {
@@ -138,10 +136,30 @@ export class DuelScene extends Phaser.Scene {
         this.scale.resize(width, height);
 
         // Adjust for mobile if needed
+        const isPortrait = height > width;
         if (width < 768) {
             this.registry.set('isMobile', true);
+            this.registry.set('isPortrait', isPortrait);
+            
+            if (isPortrait && this.cameras.main) {
+                // For portrait, adjust zoom and camera
+                this.scale.scaleMode = Phaser.Scale.ENVELOP;
+                this.cameras.main.setZoom(1.5);
+                this.cameras.main.centerOn(this.scale.width / 2, this.scale.height / 2);
+            } else if (this.cameras.main) {
+                // For landscape, reset to normal view
+                this.scale.scaleMode = Phaser.Scale.FIT;
+                this.cameras.main.setZoom(1);
+                this.cameras.main.centerOn(this.scale.width / 2, this.scale.height / 2);
+            }
         } else {
             this.registry.set('isMobile', false);
+            this.registry.set('isPortrait', false);
+            
+            if (this.cameras.main) {
+                this.cameras.main.setZoom(1);
+                this.cameras.main.centerOn(this.scale.width / 2, this.scale.height / 2);
+            }
         }
 
         // Update positions of UI elements
@@ -221,8 +239,24 @@ export class DuelScene extends Phaser.Scene {
             // Store mobile state for reference
             this.registry.set('isMobile', true);
             
+            // Check if we're in portrait mode
+            const isPortrait = window.innerHeight > window.innerWidth;
+            this.registry.set('isPortrait', isPortrait);
+            
             // Adjust game elements for mobile view
             this.scale.scaleMode = Phaser.Scale.FIT;
+            
+            if (isPortrait) {
+                // For portrait, use ENVELOP to make content bigger (might crop sides)
+                this.scale.scaleMode = Phaser.Scale.ENVELOP;
+                
+                // Increase camera zoom for portrait mode to focus on the center
+                this.cameras.main.setZoom(1.5);
+                
+                // Center the camera on the main elements
+                this.cameras.main.centerOn(this.scale.width / 2, this.scale.height / 2);
+            }
+            
             this.scale.autoCenter = Phaser.Scale.CENTER_BOTH;
             
             // Make sure the canvas fits within viewport
@@ -231,8 +265,33 @@ export class DuelScene extends Phaser.Scene {
                 canvas.style.width = '100%';
                 canvas.style.height = '100%';
             }
+            
+            // Set up orientation change handling
+            window.addEventListener('orientationchange', () => {
+                // Wait a bit for the orientation change to complete
+                setTimeout(() => {
+                    const newIsPortrait = window.innerHeight > window.innerWidth;
+                    this.registry.set('isPortrait', newIsPortrait);
+                    
+                    if (newIsPortrait) {
+                        // For portrait, adjust zoom and camera
+                        this.scale.scaleMode = Phaser.Scale.ENVELOP;
+                        this.cameras.main.setZoom(1.5);
+                        this.cameras.main.centerOn(this.scale.width / 2, this.scale.height / 2);
+                    } else {
+                        // For landscape, reset to normal view
+                        this.scale.scaleMode = Phaser.Scale.FIT;
+                        this.cameras.main.setZoom(1);
+                        this.cameras.main.centerOn(this.scale.width / 2, this.scale.height / 2);
+                    }
+                    
+                    // Force a resize event
+                    this.handleResize();
+                }, 200);
+            });
         } else {
             this.registry.set('isMobile', false);
+            this.registry.set('isPortrait', false);
         }
     }
 
@@ -611,9 +670,17 @@ export class DuelScene extends Phaser.Scene {
         this.hasShot = true;
         this.room?.send("shoot");
         
-        // Play gunshot sound if available
-        if (this.sound.get('gunshot')) {
-            this.sound.play('gunshot', { volume: 0.7 });
+        // Play gunshot sound with more robust error handling
+        try {
+            // Create a new instance of the sound each time to avoid issues
+            const gunshot = this.sound.add('gunshot', { volume: 0.7 });
+            gunshot.play();
+            // Clean up after playing
+            gunshot.once('complete', () => {
+                gunshot.destroy();
+            });
+        } catch (error) {
+            console.error('Failed to play gunshot sound:', error);
         }
         
         // More dramatic gun recoil animation
@@ -715,9 +782,17 @@ export class DuelScene extends Phaser.Scene {
         // Screen shake when opponent shoots
         this.cameras.main.shake(200, 0.008);
         
-        // Play opponent gunshot sound if available
-        if (this.sound.get('gunshot')) {
-            this.sound.play('gunshot', { volume: 0.6, detune: 200 });
+        // Play opponent gunshot sound with more robust error handling
+        try {
+            // Create a new instance of the sound each time to avoid issues
+            const gunshot = this.sound.add('gunshot', { volume: 0.6, detune: 200 });
+            gunshot.play();
+            // Clean up after playing
+            gunshot.once('complete', () => {
+                gunshot.destroy();
+            });
+        } catch (error) {
+            console.error('Failed to play opponent gunshot sound:', error);
         }
     }
 
@@ -977,9 +1052,41 @@ export class DuelScene extends Phaser.Scene {
         }
     }
 
+    // Function to unlock audio on mobile
+    private unlockAudio() {
+        // On mobile devices, audio playback must be triggered by user interaction
+        const unlockAudio = () => {
+            // Create a short silent sound for unlocking audio
+            const silence = this.sound.add('silence');
+            silence.play({ volume: 0.1 });
+            silence.once('complete', () => {
+                silence.destroy();
+            });
+
+            // Try to play background music now
+            if (!this.sound.get('western') || !this.sound.get('western').isPlaying) {
+                this.sound.play('western', { volume: 0.3, loop: true });
+            }
+
+            // Remove event listeners after we've unlocked audio
+            window.removeEventListener('touchstart', unlockAudio);
+            window.removeEventListener('touchend', unlockAudio);
+            window.removeEventListener('click', unlockAudio);
+            document.removeEventListener('keydown', unlockAudio);
+        };
+
+        // Add event listeners to unlock audio on first user interaction
+        window.addEventListener('touchstart', unlockAudio, false);
+        window.addEventListener('touchend', unlockAudio, false);
+        window.addEventListener('click', unlockAudio, false);
+        document.addEventListener('keydown', unlockAudio, false);
+    }
+
     preload() {
         // Load audio files
         this.load.audio('western', 'assets/western-theme.mp3');
         this.load.audio('gunshot', 'assets/gunshot.mp3');
+        // Create a short silent sound for unlocking audio
+        this.load.audio('silence', 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADQgBJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJ//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAYAAAAAAAAAQx/3bxsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/7kGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEluZm8AAAAPAAAAAwAABPAANjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2VlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWf39/f39/f39/f39/f39/f39/f39/f39/fz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/P8DAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwP////////////////////////////////8AAAAATGF2YzU4LjEwAAAAAAAAAAAAAAAAJAcAAAAAAAAABOipO5QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEluZm8AAAAPAAAAAgAAA4QAVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqv///////////////////////////////////////////////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEwAAAAAAAAAAAAAAAAJAAAAAAAAAAA4G4g9XQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/w==');
     }
 } 
