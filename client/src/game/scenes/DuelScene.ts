@@ -169,42 +169,62 @@ export class DuelScene extends Phaser.Scene {
             // Colyseus will automatically convert this to WebSocket protocol internally
             const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:2567';
             
-            console.log('Environment:', {
+            console.log('Connection details:', {
                 NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL,
                 wsUrl: wsUrl,
-                origin: window.location.origin
+                origin: window.location.origin,
+                protocol: window.location.protocol,
+                retryCount: retryCount
             });
             
-            console.log('Connecting to WebSocket server at:', wsUrl);
+            console.log('Creating Colyseus client...');
             this.client = new Client(wsUrl);
             
-            console.log('Attempting to join room...');
+            console.log('Attempting to join room "duel"...');
             this.room = await this.client.joinOrCreate('duel');
             
             if (!this.room) {
-                throw new Error('Failed to create or join room');
+                throw new Error('Failed to create or join room - room is null');
             }
             
-            console.log('Connected to server successfully');
+            console.log('Successfully connected and joined room:', {
+                sessionId: this.room.sessionId,
+                roomId: this.room.id,
+                roomName: this.room.name
+            });
+            
             this.setupRoomHandlers();
             
         } catch (error: any) {
-            console.error("Could not connect to server:", error);
-            console.error("Error details:", {
+            console.error("Connection error details:", {
                 name: error?.name,
                 message: error?.message,
-                stack: error?.stack
+                stack: error?.stack,
+                retryCount: retryCount,
+                wsUrl: process.env.NEXT_PUBLIC_WS_URL,
+                origin: window.location.origin,
+                protocol: window.location.protocol
             });
+
+            if (error instanceof Error) {
+                console.error("Full error object:", {
+                    ...error,
+                    cause: error.cause
+                });
+            }
+
             this.statusText?.setText('Connection failed! Retrying...');
             
-            // Retry logic
+            // Retry logic with exponential backoff
             if (retryCount < 3) {
-                console.log(`Retrying connection (${retryCount + 1}/3)...`);
+                const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+                console.log(`Retrying connection (${retryCount + 1}/3) after ${delay}ms...`);
                 setTimeout(() => {
                     this.connectToServer(retryCount + 1);
-                }, 2000);
+                }, delay);
             } else {
-                this.statusText?.setText('Connection failed! Please refresh the page.');
+                this.statusText?.setText('Connection failed after 3 retries. Please refresh.');
+                console.error('Connection failed after maximum retries');
             }
         }
     }
