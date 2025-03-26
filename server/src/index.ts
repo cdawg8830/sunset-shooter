@@ -17,16 +17,17 @@ app.use((req, res, next) => {
 
 // Enable CORS with specific configuration
 app.use(cors({
-    origin: ["https://www.sunsetshooter.com", "http://localhost:3000"],
+    origin: ["https://www.sunsetshooter.com", "https://sunsetshooter.com", "http://localhost:3000"],
     methods: ['GET', 'POST', 'OPTIONS', 'HEAD', 'PATCH', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Access-Control-Allow-Origin'],
+    exposedHeaders: ['Access-Control-Allow-Origin'],
     credentials: true,
     maxAge: 86400 // Cache preflight requests for 24 hours
 }));
 
 // Handle preflight requests
 app.options('*', cors({
-    origin: ["https://www.sunsetshooter.com", "http://localhost:3000"],
+    origin: ["https://www.sunsetshooter.com", "https://sunsetshooter.com", "http://localhost:3000"],
     credentials: true
 }));
 
@@ -57,13 +58,7 @@ const gameServer = new Server({
     transport: new WebSocketTransport({
         server,
         pingInterval: 5000,
-        pingMaxRetries: 3,
-        cors: {
-            origin: ["https://www.sunsetshooter.com", "http://localhost:3000"],
-            credentials: true,
-            allowedHeaders: ["*"],
-            methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
-        }
+        pingMaxRetries: 3
     })
 });
 
@@ -75,7 +70,7 @@ gameServer.listen(port).then(() => {
     console.log(`🎮 Game server started on port ${port}`);
     console.log('Server configuration:', {
         port,
-        corsOrigin: ["https://www.sunsetshooter.com", "http://localhost:3000"],
+        corsOrigins: ["https://www.sunsetshooter.com", "https://sunsetshooter.com", "http://localhost:3000"],
         environment: process.env.NODE_ENV
     });
 }).catch((err) => {
