@@ -317,7 +317,6 @@ export class DuelScene extends Phaser.Scene {
                 NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL,
                 baseUrl: baseUrl,
                 wsUrl: wsUrl,
-                origin: window.location.origin,
                 retryCount: retryCount
             });
             
@@ -325,15 +324,9 @@ export class DuelScene extends Phaser.Scene {
             this.client = new Client(wsUrl);
             
             console.log('Attempting to join room "duel"...');
-            // Add explicit connection options
-            const connectionOptions = {
-                username: this.username,
-                headers: {
-                    'Origin': window.location.origin
-                }
-            };
-            
-            this.room = await this.client.joinOrCreate('duel', connectionOptions);
+            this.room = await this.client.joinOrCreate('duel', { 
+                username: this.username 
+            });
             
             if (!this.room) {
                 throw new Error('Failed to create or join room - room is null');
