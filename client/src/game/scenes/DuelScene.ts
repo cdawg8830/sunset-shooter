@@ -214,7 +214,7 @@ export class DuelScene extends Phaser.Scene {
         gun.setOrigin(0.5, 0.5);
         gun.setScale(0.8);
         
-        if (this.gunContainer) {
+        if (this.gunContainer && this.muzzleFlash) {
             this.gunContainer.add([gun]);
             this.gunContainer.add(this.muzzleFlash);
             this.gunContainer.setRotation(-0.2);
