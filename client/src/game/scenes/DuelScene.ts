@@ -92,17 +92,6 @@ export class DuelScene extends Phaser.Scene {
             { ...textConfig, fontSize: '48px' }
         ).setOrigin(0.5);
 
-        // Check for saved username
-        const savedUsername = localStorage.getItem('username');
-        if (savedUsername) {
-            this.username = savedUsername;
-            this.connectToServer();
-            this.statusText.setText('Connecting...');
-        } else {
-            // Create username input
-            this.createUsernameInput();
-        }
-
         // Create opponent placeholder
         this.createOpponent();
 
@@ -112,6 +101,9 @@ export class DuelScene extends Phaser.Scene {
         // Create buttons (initially hidden)
         this.createButtons();
         this.readyButton?.setVisible(false);
+
+        // Create username input first, before any connection attempts
+        this.createUsernameInput();
 
         // Add mobile touch controls
         this.input.on('pointerdown', () => {
