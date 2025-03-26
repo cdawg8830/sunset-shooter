@@ -40,6 +40,10 @@ export class DuelScene extends Phaser.Scene {
     }
 
     create() {
+        // Make game responsive
+        this.scale.on('resize', this.resize, this);
+        this.resize();
+
         // Create background elements
         this.createBackground();
 
@@ -54,7 +58,7 @@ export class DuelScene extends Phaser.Scene {
 
         // Add status text
         this.statusText = this.add.text(
-            400, 
+            this.scale.width / 2, 
             30, 
             'Enter your username to start', 
             { ...textConfig, fontSize: '24px' }
@@ -76,6 +80,14 @@ export class DuelScene extends Phaser.Scene {
             textConfig
         );
 
+        // Add countdown text
+        this.countdownText = this.add.text(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            '',
+            { ...textConfig, fontSize: '48px' }
+        ).setOrigin(0.5);
+
         // Check for saved username
         const savedUsername = localStorage.getItem('username');
         if (savedUsername) {
@@ -96,28 +108,60 @@ export class DuelScene extends Phaser.Scene {
         // Create buttons (initially hidden)
         this.createButtons();
         this.readyButton?.setVisible(false);
+
+        // Add mobile touch controls
+        this.input.on('pointerdown', () => {
+            if (this.room?.state.gamePhase === 'draw' && !this.hasShot) {
+                this.handleShoot();
+            } else if (this.room?.state.gamePhase === 'waiting' && this.readyButton?.visible) {
+                this.handleReady();
+            }
+        });
+    }
+
+    private resize() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        this.scale.resize(width, height);
+
+        // Update positions of UI elements
+        if (this.statusText) {
+            this.statusText.setPosition(width / 2, 30);
+        }
+        if (this.countdownText) {
+            this.countdownText.setPosition(width / 2, height / 2);
+        }
+        if (this.opponent) {
+            this.opponent.setPosition(width / 2, height / 2 + 20); // Adjusted Y position
+        }
+        if (this.gunContainer) {
+            this.gunContainer.setPosition(width / 2, height - 150);
+        }
+        if (this.readyButton) {
+            this.readyButton.setPosition(width / 2, height - 50);
+        }
+        if (this.shootButton) {
+            this.shootButton.setPosition(width / 2, height - 50);
+        }
     }
 
     private createBackground() {
         // Add the background image
-        const background = this.add.image(400, 300, 'background');
+        const background = this.add.image(this.scale.width / 2, this.scale.height / 2, 'background');
         
         // Scale to fit our game width while maintaining aspect ratio
-        const scaleX = 800 / background.width;
-        const scaleY = 600 / background.height;
-        const scale = Math.min(scaleX, scaleY); // Use min instead of max to ensure it covers the screen
+        const scaleX = this.scale.width / background.width;
+        const scaleY = this.scale.height / background.height;
+        const scale = Math.max(scaleX, scaleY); // Use max to ensure it covers the screen
         background.setScale(scale);
-        
-        // Center the background
-        background.setPosition(400, 300);
         
         // Ensure the background is behind everything else
         background.setDepth(-1);
     }
 
     private createOpponent() {
-        // Create the opponent container at the vanishing point
-        this.opponent = this.add.container(400, 250);
+        // Create the opponent container
+        this.opponent = this.add.container(this.scale.width / 2, this.scale.height / 2 + 20);
         
         // Add the opponent sprite
         const opponentSprite = this.add.sprite(0, 0, 'opponent');
@@ -130,8 +174,8 @@ export class DuelScene extends Phaser.Scene {
     }
 
     private createGun() {
-        // Create a container for the gun, positioned at a better height
-        this.gunContainer = this.add.container(400, 350); // Moved down from 250 to 350
+        // Create a container for the gun
+        this.gunContainer = this.add.container(this.scale.width / 2, this.scale.height - 150);
         
         // Create muzzle flash container
         this.muzzleFlash = this.add.container(0, -30);
@@ -153,14 +197,13 @@ export class DuelScene extends Phaser.Scene {
         if (this.gunContainer) {
             this.gunContainer.add([gun]);
             this.gunContainer.add(this.muzzleFlash);
-            // Adjust the gun's angle to point more upward
             this.gunContainer.setRotation(-0.2);
         }
     }
 
     private createButtons() {
         // Create Ready button
-        this.readyButton = this.add.container(400, 550);
+        this.readyButton = this.add.container(this.scale.width / 2, this.scale.height - 50);
         const readyBg = this.add.rectangle(0, 0, 120, 40, 0x00ff00)
             .setInteractive();
         const readyText = this.add.text(0, 0, 'READY', {
@@ -171,7 +214,7 @@ export class DuelScene extends Phaser.Scene {
         this.readyButton.add([readyBg, readyText]);
 
         // Create Shoot button (initially invisible)
-        this.shootButton = this.add.container(400, 550);
+        this.shootButton = this.add.container(this.scale.width / 2, this.scale.height - 50);
         const shootBg = this.add.rectangle(0, 0, 120, 40, 0xff0000)
             .setInteractive();
         const shootText = this.add.text(0, 0, 'SHOOT', {
@@ -203,6 +246,7 @@ export class DuelScene extends Phaser.Scene {
         this.usernameInput.style.color = '#fff';
         this.usernameInput.style.textAlign = 'center';
         this.usernameInput.style.fontSize = '16px';
+        this.usernameInput.style.width = '200px'; // Fixed width for better mobile display
         
         // Create submit button
         const submitButton = document.createElement('button');
@@ -218,26 +262,32 @@ export class DuelScene extends Phaser.Scene {
         submitButton.style.color = '#fff';
         submitButton.style.cursor = 'pointer';
         submitButton.style.fontSize = '16px';
+        submitButton.style.width = '200px'; // Match input width
 
         // Add elements to DOM
         document.body.appendChild(this.usernameInput);
         document.body.appendChild(submitButton);
 
         // Handle submit
-        submitButton.onclick = () => {
+        const handleSubmit = () => {
             const username = this.usernameInput?.value.trim();
             if (username && username.length >= 2) {
                 this.username = username;
-                // Save username
                 localStorage.setItem('username', username);
-                // Remove input elements
                 this.usernameInput?.remove();
                 submitButton.remove();
-                // Start connection
                 this.connectToServer();
                 this.statusText?.setText('Connecting...');
             } else {
                 this.statusText?.setText('Username must be at least 2 characters');
+            }
+        };
+
+        // Add submit handlers
+        submitButton.onclick = handleSubmit;
+        this.usernameInput.onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                handleSubmit();
             }
         };
     }
